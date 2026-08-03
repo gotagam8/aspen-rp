@@ -1,6 +1,7 @@
 const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 const express = require('express');
 const axios = require('axios');
+const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 
@@ -14,16 +15,9 @@ const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 
-// Utilisation dynamique de l'URL selon l'environnement (Render ou Local)
 const BASE_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
-const REDIRECT_URI = `${BASE_URL}/auth/discord/callback`;
-
 const GUILD_ID = '1431438811560153211';
-
-// ID du salon Discord où envoyer les candidatures
 const CANDIDATURE_CHANNEL_ID = '1529861321775120505';
-
-// Ton propre ID d'utilisateur Discord (pour recevoir le message privé du bot)
 const ADMIN_DISCORD_ID = '1459971234422067392';
 
 // --- CONFIGURATION DU BOT DISCORD ---
@@ -45,12 +39,33 @@ if (BOT_TOKEN) {
     console.warn("⚠️ DISCORD_BOT_TOKEN manquant dans le fichier .env");
 }
 
-// --- STOCKAGE DES CANDIDATURES ---
-let candidatures = [];
+// --- GESTION DU FICHIER DE SAUVEGARDE DES CANDIDATURES ---
+const DATA_FILE = path.join(__dirname, 'candidatures.json');
 
-// --- API POUR ENREGISTRER ET ENVOYER UNE CANDIDATURE SUR DISCORD ---
+function readCandidatures() {
+    try {
+        if (fs.existsSync(DATA_FILE)) {
+            const data = fs.readFileSync(DATA_FILE, 'utf8');
+            return JSON.parse(data);
+        }
+    } catch (err) {
+        console.error("Erreur de lecture du fichier JSON :", err);
+    }
+    return [];
+}
+
+function writeCandidatures(candidatures) {
+    try {
+        fs.writeFileSync(DATA_FILE, JSON.stringify(candidatures, null, 2), 'utf8');
+    } catch (err) {
+        console.error("Erreur d'écriture dans le fichier JSON :", err);
+    }
+}
+
+// --- API : CRÉER UNE CANDIDATURE ---
 app.post('/api/candidatures', async (req, res) => {
     try {
+        let candidatures = readCandidatures();
         const nouvelleCandidature = {
             ...req.body,
             status: 'En attente',
@@ -59,8 +74,9 @@ app.post('/api/candidatures', async (req, res) => {
         };
         
         candidatures.push(nouvelleCandidature);
+        writeCandidatures(candidatures);
 
-        // Envoi automatique d'un message dans le salon Discord configuré
+        // Envoi automatique d'un message dans le salon Discord
         if (client.isReady()) {
             try {
                 const channel = await client.channels.fetch(CANDIDATURE_CHANNEL_ID);
@@ -79,7 +95,7 @@ app.post('/api/candidatures', async (req, res) => {
                     await channel.send({ embeds: [embed] });
                 }
             } catch (discordErr) {
-                console.error("Erreur lors de l'envoi de l'embed dans le salon Discord :", discordErr.message);
+                console.error("Erreur lors de l'envoi de l'embed Discord :", discordErr.message);
             }
         }
 
@@ -90,12 +106,30 @@ app.post('/api/candidatures', async (req, res) => {
     }
 });
 
-// --- API POUR RÉCUPÉRER LES CANDIDATURES (Espace Staff) ---
+// --- API : LIRE LES CANDIDATURES ---
 app.get('/api/candidatures', (req, res) => {
+    const candidatures = readCandidatures();
     res.json(candidatures);
 });
 
-// --- API POUR RÉCUPÉRER TOUS LES MEMBRES DU SERVEUR ---
+// --- API : METTRE À JOUR (Statuts ou Messages de tickets) ---
+app.put('/api/candidatures/:index', (req, res) => {
+    try {
+        const index = parseInt(req.params.index);
+        let candidatures = readCandidatures();
+
+        if (index >= 0 && index < candidatures.length) {
+            candidatures[index] = { ...candidatures[index], ...req.body };
+            writeCandidatures(candidatures);
+            return res.json({ success: true, candidatures });
+        }
+        res.status(404).json({ error: "Candidature introuvable." });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// --- API : RÉCUPÉRER TOUS LES MEMBRES DU SERVEUR ---
 app.get('/api/citoyens', async (req, res) => {
     try {
         if (!client.isReady()) {
