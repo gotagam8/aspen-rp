@@ -91,20 +91,20 @@
 
             <div class="chat-container" id="suiviContainer" style="display: none;">
                 <div class="chat-header">
-                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <i class="fa-solid fa-comments"></i>
                     <div>
-                        <h6 class="font-orbitron mb-0 text-white">SUIVI DE CANDIDATURE</h6>
-                        <small class="text-muted" style="font-size: 0.75rem;">Vérifie l'état de ton dossier</small>
+                        <h6 class="font-orbitron mb-0 text-white">SUIVI DE CANDIDATURE & DISCUSSION</h6>
+                        <small class="text-muted" style="font-size: 0.75rem;">Discussion en direct avec le staff</small>
                     </div>
                 </div>
                 
                 <div class="chat-messages" id="suiviMessages">
-                    <div class="message bot">Entre ton <strong>Pseudo Discord</strong> exact pour consulter l'état de ta candidature et voir les messages du staff :</div>
+                    <div class="message bot" id="suiviIntro">Entre ton <strong>Pseudo Discord</strong> exact pour consulter l'état de ton dossier et voir les messages du staff :</div>
                 </div>
 
-                <div class="chat-input-area">
+                <div class="chat-input-area" id="suiviInputArea">
                     <input type="text" id="suiviInput" placeholder="Ex: Pseudo#0000 ou Pseudo..." onkeypress="handleSuiviKeyPress(event)">
-                    <button class="btn btn-send" onclick="checkCandidatureStatus()"><i class="fa-solid fa-search"></i></button>
+                    <button class="btn btn-send" onclick="handleSuiviAction()"><i class="fa-solid fa-paper-plane" id="suiviBtnIcon"></i></button>
                 </div>
             </div>
         </div>
@@ -116,18 +116,29 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Logique du Chatbot de Recrutement
         let step = 0;
         let candData = { discord: '', poste: '', motivations: '', status: 'En attente', messages: [] };
+        let activePseudo = null; // Mémorise le pseudo connecté pour le live-chat
+        let liveInterval = null;
 
         const questions = [
             "Bonjour ! Quel est ton **Pseudo Discord** ?",
+            "ta quel age ?",
             "Quel poste souhaites-tu intégrer au sein du serveur ? *(Ex: Modérateur, Support, Développeur...)*",
             "Quelles sont tes **motivations** pour nous rejoindre ?"
         ];
 
         document.addEventListener('DOMContentLoaded', () => {
             botSay(questions[0]);
+            
+            // Si un pseudo était déjà mémorisé dans la session du navigateur, on relance le suivi direct
+            const savedPseudo = sessionStorage.getItem('aspen_active_discord');
+            if (savedPseudo) {
+                activePseudo = savedPseudo;
+                document.getElementById('suiviInput').value = savedPseudo;
+                chargerDiscussionDirecte(false);
+                demarrerActualisationLive();
+            }
         });
 
         function switchMode(mode) {
@@ -173,8 +184,6 @@
             } else if (step === 2) {
                 candData.motivations = text;
                 step++;
-                
-                // Sauvegarde de la candidature dans le localStorage partagé avec le modérateur
                 saveCandidature(candData);
 
                 setTimeout(() => {
@@ -185,51 +194,107 @@
 
         function saveCandidature(data) {
             let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
+            // Évite les doublons si l'utilisateur poste plusieurs fois
+            list = list.filter(c => c.discord.toLowerCase() !== data.discord.toLowerCase());
             list.push(data);
             localStorage.setItem('aspen_candidatures', JSON.stringify(list));
         }
 
-        // --- PARTIE SUIVI DE CANDIDATURE ---
+        // --- GESTION DU SUIVI ET DISCUSSION EN DIRECT (SANS RELOAD) ---
         function handleSuiviKeyPress(e) {
-            if (e.key === 'Enter') checkCandidatureStatus();
+            if (e.key === 'Enter') handleSuiviAction();
         }
 
-        function checkCandidatureStatus() {
+        function handleSuiviAction() {
             const input = document.getElementById('suiviInput');
-            const query = input.value.trim().toLowerCase();
-            if (!query) return;
+            const val = input.value.trim();
+            if (!val) return;
 
-            const container = document.getElementById('suiviMessages');
-            container.innerHTML += `<div class="message user">${escapeHtml(query)}</div>`;
-            input.value = '';
+            if (!activePseudo) {
+                // Première étape : L'utilisateur entre son pseudo pour se connecter à son fil
+                let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
+                let found = list.find(c => c.discord.toLowerCase().includes(val.toLowerCase()));
 
-            let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
-            let found = list.find(c => c.discord.toLowerCase().includes(query));
-
-            setTimeout(() => {
                 if (!found) {
-                    container.innerHTML += `<div class="message bot">❌ Aucune candidature trouvée pour ce pseudo Discord. Assure-toi de l'avoir écrit correctement.</div>`;
-                } else {
-                    let statusColor = found.status === 'Accepté' ? '#38b000' : (found.status === 'Refusé' ? '#d90429' : '#ffbe0b');
-                    let html = `<div class="message bot">
-                        <strong>📊 Statut de ton dossier :</strong><br>
-                        • Poste : ${escapeHtml(found.poste)}<br>
-                        • État : <span style="color: ${statusColor}; font-weight: bold;">${found.status || 'En attente'}</span>
-                    `;
-
-                    if (found.messages && found.messages.length > 0) {
-                        html += `<div class="mt-2 pt-2 border-top border-secondary"><strong>Messages du Staff :</strong><br>`;
-                        found.messages.forEach(m => {
-                            let senderColor = m.sender === 'Staff' ? '#f72585' : '#00f5d4';
-                            html += `<small style="display: block; margin-top: 4px;">• <strong style="color: ${senderColor};">${m.sender}</strong> (${m.date || ''}) : ${escapeHtml(m.text)}</small>`;
-                        });
-                        html += `</div>`;
-                    }
-                    html += `</div>`;
-                    container.innerHTML += html;
+                    const container = document.getElementById('suiviMessages');
+                    container.innerHTML += `<div class="message user">${escapeHtml(val)}</div>`;
+                    container.innerHTML += `<div class="message bot">❌ Aucune candidature trouvée pour ce pseudo Discord.</div>`;
+                    container.scrollTop = container.scrollHeight;
+                    input.value = '';
+                    return;
                 }
-                container.scrollTop = container.scrollHeight;
-            }, 400);
+
+                activePseudo = found.discord;
+                sessionStorage.setItem('aspen_active_discord', activePseudo);
+                input.value = '';
+                input.placeholder = "Écris un message au staff...";
+                document.getElementById('suiviBtnIcon').className = "fa-solid fa-paper-plane";
+                
+                chargerDiscussionDirecte(true);
+                demarrerActualisationLive();
+            } else {
+                // Deuxième étape : L'utilisateur est connecté, il envoie un message au staff dans sa discussion
+                let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
+                let index = list.findIndex(c => c.discord.toLowerCase() === activePseudo.toLowerCase());
+
+                if (index !== -1) {
+                    if (!list[index].messages) list[index].messages = [];
+                    
+                    const now = new Date();
+                    const timeString = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+
+                    list[index].messages.push({
+                        sender: activePseudo,
+                        text: val,
+                        date: timeString
+                    });
+
+                    localStorage.setItem('aspen_candidatures', JSON.stringify(list));
+                    input.value = '';
+                    chargerDiscussionDirecte(false); // Met à jour l'affichage instantanément
+                }
+            }
+        }
+
+        function chargerDiscussionDirecte(showWelcome) {
+            let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
+            let found = list.find(c => c.discord.toLowerCase() === activePseudo.toLowerCase());
+            const container = document.getElementById('suiviMessages');
+
+            if (!found) return;
+
+            let statusColor = found.status === 'Accepté' ? '#38b000' : (found.status === 'Refusé' ? '#d90429' : '#ffbe0b');
+            
+            let html = `
+                <div class="message bot">
+                    <strong>📊 Statut : <span style="color: ${statusColor};">${found.status || 'En attente'}</span></strong><br>
+                    • Poste : ${escapeHtml(found.poste)}
+                </div>
+            `;
+
+            if (found.messages && found.messages.length > 0) {
+                found.messages.forEach(m => {
+                    let isUser = m.sender.toLowerCase() === activePseudo.toLowerCase();
+                    let bubbleClass = isUser ? 'message user' : 'message bot';
+                    let senderLabel = isUser ? 'Toi' : `<strong style="color: #f72585;">Staff</strong>`;
+                    html += `<div class="${bubbleClass}"><small style="display: block; font-size: 0.75rem; opacity: 0.8;">${senderLabel} (${m.date || ''})</small>${escapeHtml(m.text)}</div>`;
+                });
+            } else {
+                html += `<div class="message bot">Aucun message pour l'instant. Le staff te répondra ici.</div>`;
+            }
+
+            container.innerHTML = html;
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function demarrerActualisationLive() {
+            if (liveInterval) clearInterval(liveInterval);
+            // Vérifie les modifications du localStorage toutes les 2 secondes en arrière-plan (temps réel sans recharger)
+            liveInterval = setInterval(() => {
+                if (activePseudo) {
+                    chargerDiscussionDirecte(false);
+                }
+            }, 2000);
         }
 
         function escapeHtml(text) {
