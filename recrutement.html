@@ -133,14 +133,12 @@
         document.addEventListener('DOMContentLoaded', () => {
             botSay(questions[0]);
 
-            // Si un pseudo est déjà mémorisé, on le charge automatiquement dans le suivi
             const savedPseudo = localStorage.getItem('aspen_user_pseudo');
             if (savedPseudo) {
                 document.getElementById('suiviInput').value = savedPseudo;
                 checkCandidatureStatus(true);
             }
 
-            // Rafraîchissement automatique de la discussion toutes les 3 secondes sans clignoter
             setInterval(() => {
                 const saved = localStorage.getItem('aspen_user_pseudo');
                 if (saved && document.getElementById('suiviContainer').style.display === 'block') {
@@ -194,8 +192,6 @@
                 step++;
                 
                 await saveCandidatureToServer(candData);
-
-                // Mémorise automatiquement le pseudo pour le suivi futur
                 localStorage.setItem('aspen_user_pseudo', candData.discord);
 
                 setTimeout(() => {
@@ -206,20 +202,16 @@
 
         async function saveCandidatureToServer(data) {
             try {
-                let res = await fetch('/api/candidatures', {
+                await fetch('/api/candidatures', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-                // Récupération de l'index réel après création
-                let list = await (await fetch('/api/candidatures')).json();
-                currentCandIndex = list.findIndex(c => c.discord.toLowerCase() === data.discord.toLowerCase());
             } catch (err) {
                 console.error("Erreur d'envoi de la candidature :", err);
             }
         }
 
-        // --- SUIVI DE CANDIDATURE ET DISCUSSION FLUIDE ---
         function handleSuiviKeyPress(e) {
             if (e.key === 'Enter') checkCandidatureStatus();
         }
@@ -272,7 +264,6 @@
                 container.innerHTML = html;
                 container.scrollTop = container.scrollHeight;
 
-                // Affiche la zone pour que l'utilisateur puisse répondre directement
                 document.getElementById('userTicketArea').style.display = 'flex';
                 document.getElementById('suiviInputArea').style.display = 'none';
 
