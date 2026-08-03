@@ -59,14 +59,25 @@
                 <li class="nav-item">
                     <button class="nav-link active" id="tab-recrutement" onclick="switchTab('recrutement')"><i class="fa-solid fa-user-plus me-2"></i>Recrutement & Tickets</button>
                 </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="tab-joueurs" onclick="switchTab('joueurs')"><i class="fa-solid fa-database me-2"></i>Joueurs</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="tab-membres" onclick="switchTab('membres')"><i class="fa-solid fa-users me-2"></i>Membres Discord</button>
+                </li>
             </ul>
 
             <div id="section-recrutement">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h3 class="font-orbitron mb-0"><i class="fa-solid fa-folder-open me-2 text-warning"></i>CANDIDATURES REÇUES</h3>
-                    <button class="btn btn-outline-warning btn-sm font-orbitron" onclick="sendUrgentAlert()">
-                        <i class="fa-solid fa-triangle-exclamation me-1"></i> Alerte Staff
-                    </button>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-warning btn-sm font-orbitron" onclick="sendUrgentAlert()">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i> Alerte Staff
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm font-orbitron" onclick="clearCandidaturesList()">
+                            <i class="fa-solid fa-trash me-1"></i> Vider la liste
+                        </button>
+                    </div>
                 </div>
                 
                 <div id="candidaturesList" class="row"></div>
@@ -74,13 +85,27 @@
                 <div id="ticketSection" style="display: none;" class="ticket-box">
                     <div class="d-flex justify-content-between align-items-center mb-3 border-bottom border-secondary pb-2">
                         <h5 class="font-orbitron mb-0 text-info"><i class="fa-solid fa-ticket me-2"></i>DISCUSSION AVEC : <span id="ticketCandidateName" class="text-white text-uppercase"></span></h5>
-                        <button class="btn btn-outline-secondary btn-sm font-orbitron" onclick="closeTicketView()"><i class="fa-solid fa-arrow-left me-1"></i> Retour</button>
+                        <button class="btn btn-outline-secondary btn-sm font-orbitron" onclick="closeTicketView()"><i class="fa-solid fa-arrow-left me-1"></i> Retour aux candidatures</button>
                     </div>
                     <div id="ticketMessagesContainer" class="ticket-messages"></div>
                     <div class="input-group">
                         <input type="text" id="staffTicketInput" class="form-control bg-dark text-white border-secondary" placeholder="Écris ton message..." onkeypress="handleTicketKey(event)">
                         <button class="btn btn-info font-orbitron text-dark fw-bold px-4" style="background: var(--secondary-neon); border: none;" onclick="sendTicketMessage()"><i class="fa-solid fa-paper-plane me-1"></i> Envoyer</button>
                     </div>
+                </div>
+            </div>
+
+            <div id="section-joueurs" style="display: none;">
+                <h3 class="font-orbitron mb-4"><i class="fa-solid fa-database me-2 text-info"></i>GESTION DES JOUEURS</h3>
+                <div class="cand-card text-center text-muted py-5">
+                    <h5>Aucune donnée joueur connectée pour le moment.</h5>
+                </div>
+            </div>
+
+            <div id="section-membres" style="display: none;">
+                <h3 class="font-orbitron mb-4"><i class="fa-solid fa-users me-2 text-success"></i>MEMBRES DISCORD</h3>
+                <div class="cand-card text-center text-muted py-5">
+                    <h5>Synchronisation des membres Discord en attente...</h5>
                 </div>
             </div>
         </div>
@@ -97,8 +122,6 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             loadCandidaturesFromServer();
-
-            // Synchronisation automatique toutes les 3 secondes sans perturber la saisie
             setInterval(() => {
                 loadCandidaturesFromServer(true);
             }, 3000);
@@ -106,7 +129,12 @@
 
         function switchTab(tab) {
             document.getElementById('tab-recrutement').classList.toggle('active', tab === 'recrutement');
+            document.getElementById('tab-joueurs').classList.toggle('active', tab === 'joueurs');
+            document.getElementById('tab-membres').classList.toggle('active', tab === 'membres');
+
             document.getElementById('section-recrutement').style.display = tab === 'recrutement' ? 'block' : 'none';
+            document.getElementById('section-joueurs').style.display = tab === 'joueurs' ? 'block' : 'none';
+            document.getElementById('section-membres').style.display = tab === 'membres' ? 'block' : 'none';
         }
 
         async function loadCandidaturesFromServer(silent = false) {
@@ -114,7 +142,6 @@
                 let response = await fetch('/api/candidatures');
                 if (response.ok) {
                     candidaturesListCache = await response.json();
-                    
                     if (!silent || activeTicketIndex === null) {
                         renderCandidatures();
                     }
@@ -137,12 +164,24 @@
             }
         }
 
+        async function clearCandidaturesList() {
+            if (!confirm("Voulez-vous vraiment vider toutes les candidatures ?")) return;
+            try {
+                await fetch('/api/candidatures', { method: 'DELETE' });
+                candidaturesListCache = [];
+                closeTicketView();
+                renderCandidatures();
+            } catch (err) {
+                console.error("Erreur lors de la suppression :", err);
+            }
+        }
+
         function renderCandidatures() {
             const container = document.getElementById('candidaturesList');
             let list = candidaturesListCache;
 
             if (list.length === 0) {
-                container.innerHTML = `<div class="col-12 text-center text-muted my-5"><h5>Aucune candidature pour le moment.</h5></div>`;
+                container.innerHTML = `<div class="col-12 text-center text-muted my-5"><h5>Aucune candidature n'a été soumise pour le moment.</h5></div>`;
                 return;
             }
 
