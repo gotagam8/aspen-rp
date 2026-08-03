@@ -20,7 +20,7 @@ const ADMIN_DISCORD_ID = '1459971234422067392';
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildMembers, // Indispensable pour l'API des membres
         GatewayIntentBits.GuildPresences
     ]
 });
@@ -123,7 +123,10 @@ app.get('/api/citoyens', async (req, res) => {
             return res.status(404).json({ error: "Le bot ne trouve pas le serveur Discord spécifié." });
         }
 
-        await guild.members.fetch();
+        // Sécurité pour éviter le crash en cas de restriction d'intent
+        await guild.members.fetch().catch(err => {
+            console.warn("Avertissement fetch membres :", err.message);
+        });
 
         const result = guild.members.cache.map(member => ({
             id: member.id,
