@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 const express = require('express');
 const axios = require('axios');
 const path = require('path');
@@ -19,6 +19,9 @@ const BASE_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
 const REDIRECT_URI = `${BASE_URL}/auth/discord/callback`;
 
 const GUILD_ID = '1431438811560153211';
+
+// ID du salon Discord où envoyer les candidatures
+const CANDIDATURE_CHANNEL_ID = '1529861321775120505';
 
 // Ton propre ID d'utilisateur Discord (pour recevoir le message privé du bot)
 const ADMIN_DISCORD_ID = '1459971234422067392';
@@ -41,6 +44,56 @@ if (BOT_TOKEN) {
 } else {
     console.warn("⚠️ DISCORD_BOT_TOKEN manquant dans le fichier .env");
 }
+
+// --- STOCKAGE DES CANDIDATURES ---
+let candidatures = [];
+
+// --- API POUR ENREGISTRER ET ENVOYER UNE CANDIDATURE SUR DISCORD ---
+app.post('/api/candidatures', async (req, res) => {
+    try {
+        const nouvelleCandidature = {
+            ...req.body,
+            status: 'En attente',
+            messages: [],
+            date: new Date().toISOString()
+        };
+        
+        candidatures.push(nouvelleCandidature);
+
+        // Envoi automatique d'un message dans le salon Discord configuré
+        if (client.isReady()) {
+            try {
+                const channel = await client.channels.fetch(CANDIDATURE_CHANNEL_ID);
+                if (channel && channel.isTextBased()) {
+                    const embed = new EmbedBuilder()
+                        .setColor('#f72585')
+                        .setTitle('🚨 NOUVELLE CANDIDATURE REÇUE')
+                        .addFields(
+                            { name: '👤 Pseudo Discord', value: nouvelleCandidature.discord || 'Inconnu', inline: true },
+                            { name: '💼 Poste Visé', value: nouvelleCandidature.poste || 'Non spécifié', inline: true },
+                            { name: '📝 Motivations', value: nouvelleCandidature.motivations || 'Aucune motivation renseignée' }
+                        )
+                        .setTimestamp()
+                        .setFooter({ text: 'ASPEN RP • Système de Recrutement IA' });
+
+                    await channel.send({ embeds: [embed] });
+                }
+            } catch (discordErr) {
+                console.error("Erreur lors de l'envoi de l'embed dans le salon Discord :", discordErr.message);
+            }
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error("ERREUR API POST CANDIDATURE :", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// --- API POUR RÉCUPÉRER LES CANDIDATURES (Espace Staff) ---
+app.get('/api/candidatures', (req, res) => {
+    res.json(candidatures);
+});
 
 // --- API POUR RÉCUPÉRER TOUS LES MEMBRES DU SERVEUR ---
 app.get('/api/citoyens', async (req, res) => {
@@ -94,5 +147,4 @@ app.post('/api/urgent-alert', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`✅ Serveur prêt sur le port ${PORT}`);
     console.log(`🌐 Espace Modérateur : ${BASE_URL}/moderateur.html`);
-    console.log(`🌐 Boutique : ${BASE_URL}/boutique.html`);
 });
