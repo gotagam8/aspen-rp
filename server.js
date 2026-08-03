@@ -13,11 +13,14 @@ app.use(express.json());
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
-const REDIRECT_URI = `http://localhost:${PORT}/auth/discord/callback`;
+
+// Utilisation dynamique de l'URL selon l'environnement (Render ou Local)
+const BASE_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+const REDIRECT_URI = `${BASE_URL}/auth/discord/callback`;
 
 const GUILD_ID = '1431438811560153211';
 
-// Remplace ceci par ton propre ID d'utilisateur Discord (pour recevoir le message privé du bot)
+// Ton propre ID d'utilisateur Discord (pour recevoir le message privé du bot)
 const ADMIN_DISCORD_ID = '1459971234422067392';
 
 // --- CONFIGURATION DU BOT DISCORD ---
@@ -68,7 +71,7 @@ app.get('/api/citoyens', async (req, res) => {
     }
 });
 
-// --- NOUVELLE ROUTE : ALERTE URGENTE BOT ---
+// --- ROUTE : ALERTE URGENTE BOT ---
 app.post('/api/urgent-alert', async (req, res) => {
     try {
         if (!client.isReady()) {
@@ -77,7 +80,7 @@ app.post('/api/urgent-alert', async (req, res) => {
 
         const user = await client.users.fetch(ADMIN_DISCORD_ID);
         if (user) {
-            await user.send("🚨 **ALERTE STAFF** 🚨\nVas vite sur http://localhost:3000/moderateur.html il y a une candidature importante !");
+            await user.send(`🚨 **ALERTE STAFF** 🚨\nVas vite sur ${BASE_URL}/moderateur.html il y a une candidature importante !`);
             res.json({ success: true });
         } else {
             res.status(404).json({ error: "Administrateur introuvable par le bot." });
@@ -89,7 +92,7 @@ app.post('/api/urgent-alert', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`✅ Serveur prêt sur http://localhost:${PORT}`);
-    console.log(`🌐 Accès Espace Modérateur : http://localhost:${PORT}/moderateur.html`);
-    console.log(`🌐 Accès Boutique : http://localhost:${PORT}/boutique.html`);
+    console.log(`✅ Serveur prêt sur le port ${PORT}`);
+    console.log(`🌐 Espace Modérateur : ${BASE_URL}/moderateur.html`);
+    console.log(`🌐 Boutique : ${BASE_URL}/boutique.html`);
 });
