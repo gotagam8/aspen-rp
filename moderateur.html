@@ -39,7 +39,6 @@
         .msg-bubble.staff { align-self: flex-end; background: var(--accent-pink); color: white; }
         .msg-bubble.user { align-self: flex-start; background: #151828; border-left: 3px solid var(--secondary-neon); color: #e2e8f0; }
 
-        .member-card { background: var(--bg-card); border: 1px solid var(--purple-glow); border-radius: 12px; padding: 18px; margin-bottom: 20px; height: 100%; display: flex; flex-direction: column; justify-content: space-between; }
         .member-avatar {
             width: 45px; height: 45px; border-radius: 50%;
             background: linear-gradient(45deg, #7209b7, var(--accent-pink));
@@ -166,6 +165,7 @@
             document.getElementById('section-membres').style.display = tab === 'membres' ? 'block' : 'none';
         }
 
+        // --- FONCTION POUR ENVOYER L'ALERTE URGENTE AU BOT ---
         async function sendUrgentAlert() {
             if (!confirm("Voulez-vous envoyer une alerte urgente sur votre Discord ?")) return;
 
@@ -187,6 +187,7 @@
             }
         }
 
+        // --- GESTION RECRUTEMENT & TICKETS ---
         function renderCandidatures() {
             const container = document.getElementById('candidaturesList');
             let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
@@ -316,6 +317,7 @@
             }
         }
 
+        // --- GESTION SECTION JOUEURS ---
         function renderPlayers() {
             const container = document.getElementById('playersList');
             let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
@@ -328,119 +330,104 @@
             container.innerHTML = '';
             list.forEach((item) => {
                 const card = document.createElement('div');
-                card.className = 'col-md-4 mb-3';
+                card.className = 'col-md-4';
                 card.innerHTML = `
                     <div class="cand-card">
-                        <h5 class="font-orbitron mb-2 text-info"><i class="fa-solid fa-user me-2"></i>${escapeHtml(item.discord)}</h5>
-                        <p class="mb-1"><strong>Poste visé :</strong> ${escapeHtml(item.poste)}</p>
-                        <p class="mb-0"><strong>Statut :</strong> <span class="badge bg-secondary">${item.status || 'En attente'}</span></p>
+                        <h5 class="font-orbitron text-info mb-2"><i class="fa-brands fa-discord me-2"></i>${escapeHtml(item.discord)}</h5>
+                        <p class="mb-1 text-muted">Poste visé : ${escapeHtml(item.poste)}</p>
+                        <span class="status-badge status-${(item.status || 'En-attente').replace(' ', '-')}">${item.status || 'En attente'}</span>
                     </div>
                 `;
                 container.appendChild(card);
             });
         }
 
-        function renderDiscordMembers() {
+        // --- GESTION MEMBRES DISCORD ---
+        async function renderDiscordMembers() {
             const container = document.getElementById('discordMembersList');
-            let list = JSON.parse(localStorage.getItem('aspen_discord_members') || '[]');
+            container.innerHTML = `<div class="col-12 text-center text-muted my-5"><h5>Chargement des membres du serveur Discord...</h5></div>`;
+            
+            try {
+                let response = await fetch('/api/citoyens');
+                if (!response.ok) throw new Error("Erreur réseau");
+                let members = await response.json();
 
-            if (list.length === 0) {
-                // Création d'exemples de membres fictifs par défaut pour le visuel
-                list = [
-                    { name: 'AspenUser#1234', roles: ['Membre', 'Joueur'] },
-                    { name: 'ModoTest#0001', roles: ['Modérateur', 'Staff'] }
-                ];
-                localStorage.setItem('aspen_discord_members', JSON.stringify(list));
-            }
+                if (!Array.isArray(members) || members.length === 0) {
+                    container.innerHTML = `<div class="col-12 text-center text-muted my-5"><h5>Aucun membre trouvé sur le serveur.</h5></div>`;
+                    return;
+                }
 
-            container.innerHTML = '';
-            list.forEach((m, idx) => {
-                let rolesHtml = '';
-                m.roles.forEach((r, rIdx) => {
-                    let isAdmin = r.toLowerCase().includes('staff') || r.toLowerCase().includes('modo') || r.toLowerCase().includes('admin');
-                    rolesHtml += `
-                        <span class="role-badge ${isAdmin ? 'admin' : ''}">
-                            ${escapeHtml(r)}
-                            <i class="fa-solid fa-xmark role-remove" onclick="removeRole(${idx}, ${rIdx})"></i>
-                        </span>
-                    `;
-                });
+                container.innerHTML = '';
+                members.forEach((member) => {
+                    let memberName = member.name || 'Inconnu';
+                    let memberId = member.id || memberName;
+                    let firstLetter = memberName.charAt(0).toUpperCase();
+                    let rolesHtml = (member.roles && member.roles.length > 0) 
+                        ? member.roles.map(r => `<span class="role-badge">${escapeHtml(r)}</span>`).join('') 
+                        : `<span class="text-muted" style="font-size: 0.75rem;">Aucun rôle</span>`;
 
-                const col = document.createElement('div');
-                col.className = 'col-md-4 mb-3 member-col';
-                col.innerHTML = `
-                    <div class="member-card">
-                        <div>
-                            <div class="d-flex align-items-center gap-3 mb-3">
-                                <div class="member-avatar">${m.name.charAt(0).toUpperCase()}</div>
-                                <h6 class="font-orbitron mb-0 text-white text-truncate">${escapeHtml(m.name)}</h6>
+                    const card = document.createElement('div');
+                    card.className = 'col-md-4 member-card-wrapper mb-3';
+                    card.setAttribute('data-name', memberName.toLowerCase());
+                    card.innerHTML = `
+                        <div class="cand-card">
+                            <div class="d-flex align-items-center gap-3 mb-2">
+                                <div class="member-avatar">${firstLetter}</div>
+                                <div>
+                                    <h5 class="font-orbitron text-info mb-0">${escapeHtml(memberName)}</h5>
+                                    <small class="text-muted"><span class="text-success">●</span> En ligne</small>
+                                </div>
                             </div>
-                            <small class="text-muted font-orbitron" style="font-size: 0.7rem;">RÔLES ATTRIBUÉS :</small>
                             <div class="roles-container">${rolesHtml}</div>
-                        </div>
-                        <div>
-                            <button class="btn btn-action btn-add-role w-100 mb-2" onclick="addRole(${idx})">
-                                <i class="fa-solid fa-plus"></i> Ajouter un rôle
-                            </button>
                             <div class="member-actions">
-                                <button class="btn btn-action btn-promote" onclick="promoteMember(${idx})"><i class="fa-solid fa-arrow-up"></i> Promouvoir</button>
-                                <button class="btn btn-action btn-mute" onclick="actionMember('${m.name}', 'Mute')"><i class="fa-solid fa-microphone-slash"></i> Mute</button>
-                                <button class="btn btn-action btn-kick" onclick="actionMember('${m.name}', 'Expulsé')"><i class="fa-solid fa-user-slash"></i> Expulser</button>
-                                <button class="btn btn-action btn-ban" onclick="actionMember('${m.name}', 'Banni')"><i class="fa-solid fa-ban"></i> Bannir</button>
+                                <button class="btn-action btn-promote" onclick="memberAction('promote', '${escapeHtml(memberId)}')"><i class="fa-solid fa-arrow-up"></i> Promouvoir</button>
+                                <button class="btn-action btn-mute" onclick="memberAction('mute', '${escapeHtml(memberId)}')"><i class="fa-solid fa-microphone-slash"></i> Mute</button>
+                                <button class="btn-action btn-kick" onclick="memberAction('kick', '${escapeHtml(memberId)}')"><i class="fa-solid fa-user-slash"></i> Expulser</button>
+                                <button class="btn-action btn-ban" onclick="memberAction('ban', '${escapeHtml(memberId)}')"><i class="fa-solid fa-ban"></i> Ban</button>
+                                <button class="btn-action btn-add-role" onclick="memberAction('add-role', '${escapeHtml(memberId)}')"><i class="fa-solid fa-plus"></i> Ajouter un rôle</button>
                             </div>
                         </div>
-                    </div>
-                `;
-                container.appendChild(col);
-            });
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (error) {
+                console.error("Erreur :", error);
+                container.innerHTML = `<div class="col-12 text-center text-danger my-5"><h5>Impossible de charger les membres du bot. Vérifie que ton serveur Node.js est bien démarré.</h5></div>`;
+            }
+        }
+
+        function memberAction(actionType, memberId) {
+            switch(actionType) {
+                case 'promote':
+                    if(confirm("Voulez-vous promouvoir ce membre ?")) alert("Action 'Promouvoir' envoyée pour : " + memberId);
+                    break;
+                case 'mute':
+                    if(confirm("Voulez-vous rendre muet (mute) ce membre ?")) alert("Action 'Mute' envoyée pour : " + memberId);
+                    break;
+                case 'kick':
+                    if(confirm("Êtes-vous sûr de vouloir expulser ce membre ?")) alert("Action 'Expulser' envoyée pour : " + memberId);
+                    break;
+                case 'ban':
+                    if(confirm("ATTENTION : Voulez-vous bannir ce membre ?")) alert("Action 'Ban' envoyée pour : " + memberId);
+                    break;
+                case 'add-role':
+                    let roleName = prompt("Entrez le nom du rôle à ajouter :");
+                    if(roleName) alert("Ajout du rôle '" + roleName + "' pour : " + memberId);
+                    break;
+            }
         }
 
         function filterDiscordMembers() {
-            let filter = document.getElementById('searchDiscordMember').value.toLowerCase();
-            let cols = document.querySelectorAll('.member-col');
-            cols.forEach(col => {
-                let text = col.innerText.toLowerCase();
-                col.style.display = text.includes(filter) ? 'block' : 'none';
-            });
+            let input = document.getElementById('searchDiscordMember').value.toLowerCase();
+            let cards = document.getElementsByClassName('member-card-wrapper');
+            for (let i = 0; i < cards.length; i++) {
+                let name = cards[i].getAttribute('data-name');
+                cards[i].style.display = name && name.includes(input) ? 'block' : 'none';
+            }
         }
 
         function addNewDiscordMember() {
-            let name = prompt("Entrez le pseudo Discord du nouveau membre :");
-            if (!name) return;
-            let list = JSON.parse(localStorage.getItem('aspen_discord_members') || '[]');
-            list.push({ name: name, roles: ['Membre'] });
-            localStorage.setItem('aspen_discord_members', JSON.stringify(list));
-            renderDiscordMembers();
-        }
-
-        function addRole(idx) {
-            let role = prompt("Nom du rôle à ajouter (ex: VIP, Modérateur...) :");
-            if (!role) return;
-            let list = JSON.parse(localStorage.getItem('aspen_discord_members') || '[]');
-            list[idx].roles.push(role);
-            localStorage.setItem('aspen_discord_members', JSON.stringify(list));
-            renderDiscordMembers();
-        }
-
-        function removeRole(mIdx, rIdx) {
-            let list = JSON.parse(localStorage.getItem('aspen_discord_members') || '[]');
-            list[mIdx].roles.splice(rIdx, 1);
-            localStorage.setItem('aspen_discord_members', JSON.stringify(list));
-            renderDiscordMembers();
-        }
-
-        function promoteMember(idx) {
-            let list = JSON.parse(localStorage.getItem('aspen_discord_members') || '[]');
-            list[idx].roles.push('Staff');
-            localStorage.setItem('aspen_discord_members', JSON.stringify(list));
-            renderDiscordMembers();
-            alert("Membre promu avec succès !");
-        }
-
-        function actionMember(name, actionType) {
-            if (confirm(`Voulez-vous vraiment appliquer l'action [${actionType}] à ${name} ?`)) {
-                alert(`Action ${actionType} effectuée sur ${name}.`);
-            }
+            alert("Pour ajouter un nouveau membre, invite-le directement sur ton serveur Discord !");
         }
 
         function escapeHtml(text) {
