@@ -39,6 +39,9 @@
         .msg-bubble.staff { align-self: flex-end; background: var(--accent-pink); color: white; }
         .msg-bubble.user { align-self: flex-start; background: #151828; border-left: 3px solid var(--secondary-neon); color: #e2e8f0; }
 
+        .member-card { background: var(--bg-card); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 15px; display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+        .member-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--secondary-neon); }
+
         footer { text-align: center; padding: 20px; background: rgba(8, 9, 14, 0.95); border-top: 1px solid rgba(255, 255, 255, 0.05); color: #64748b; font-size: 0.85rem; font-family: 'Orbitron', sans-serif; letter-spacing: 1px; }
     </style>
 </head>
@@ -60,9 +63,6 @@
                     <button class="nav-link active" id="tab-recrutement" onclick="switchTab('recrutement')"><i class="fa-solid fa-user-plus me-2"></i>Recrutement & Tickets</button>
                 </li>
                 <li class="nav-item">
-                    <button class="nav-link" id="tab-joueurs" onclick="switchTab('joueurs')"><i class="fa-solid fa-database me-2"></i>Joueurs</button>
-                </li>
-                <li class="nav-item">
                     <button class="nav-link" id="tab-membres" onclick="switchTab('membres')"><i class="fa-solid fa-users me-2"></i>Membres Discord</button>
                 </li>
             </ul>
@@ -70,14 +70,9 @@
             <div id="section-recrutement">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h3 class="font-orbitron mb-0"><i class="fa-solid fa-folder-open me-2 text-warning"></i>CANDIDATURES REÇUES</h3>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-outline-warning btn-sm font-orbitron" onclick="sendUrgentAlert()">
-                            <i class="fa-solid fa-triangle-exclamation me-1"></i> Alerte Staff
-                        </button>
-                        <button class="btn btn-outline-danger btn-sm font-orbitron" onclick="clearCandidaturesList()">
-                            <i class="fa-solid fa-trash me-1"></i> Vider la liste
-                        </button>
-                    </div>
+                    <button class="btn btn-outline-warning btn-sm font-orbitron" onclick="sendUrgentAlert()">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i> Alerte Staff
+                    </button>
                 </div>
                 
                 <div id="candidaturesList" class="row"></div>
@@ -85,7 +80,7 @@
                 <div id="ticketSection" style="display: none;" class="ticket-box">
                     <div class="d-flex justify-content-between align-items-center mb-3 border-bottom border-secondary pb-2">
                         <h5 class="font-orbitron mb-0 text-info"><i class="fa-solid fa-ticket me-2"></i>DISCUSSION AVEC : <span id="ticketCandidateName" class="text-white text-uppercase"></span></h5>
-                        <button class="btn btn-outline-secondary btn-sm font-orbitron" onclick="closeTicketView()"><i class="fa-solid fa-arrow-left me-1"></i> Retour aux candidatures</button>
+                        <button class="btn btn-outline-secondary btn-sm font-orbitron" onclick="closeTicketView()"><i class="fa-solid fa-arrow-left me-1"></i> Retour</button>
                     </div>
                     <div id="ticketMessagesContainer" class="ticket-messages"></div>
                     <div class="input-group">
@@ -95,17 +90,18 @@
                 </div>
             </div>
 
-            <div id="section-joueurs" style="display: none;">
-                <h3 class="font-orbitron mb-4"><i class="fa-solid fa-database me-2 text-info"></i>GESTION DES JOUEURS</h3>
-                <div class="cand-card text-center text-muted py-5">
-                    <h5>Aucune donnée joueur connectée pour le moment.</h5>
-                </div>
-            </div>
-
             <div id="section-membres" style="display: none;">
-                <h3 class="font-orbitron mb-4"><i class="fa-solid fa-users me-2 text-success"></i>MEMBRES DISCORD</h3>
-                <div class="cand-card text-center text-muted py-5">
-                    <h5>Synchronisation des membres Discord en attente...</h5>
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3 class="font-orbitron mb-0"><i class="fa-solid fa-users me-2 text-info"></i>MEMBRES DISCORD</h3>
+                    <button class="btn btn-outline-info btn-sm font-orbitron" onclick="loadDiscordMembers()">
+                        <i class="fa-solid fa-rotate me-1"></i> Actualiser
+                    </button>
+                </div>
+                <div id="discordMembersList" class="row">
+                    <div class="col-12 text-center text-muted my-5">
+                        <div class="spinner-border text-info mb-2" role="status"></div>
+                        <h5>Synchronisation des membres Discord en attente...</h5>
+                    </div>
                 </div>
             </div>
         </div>
@@ -122,6 +118,9 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             loadCandidaturesFromServer();
+            loadDiscordMembers();
+
+            // Synchronisation automatique toutes les 3 secondes
             setInterval(() => {
                 loadCandidaturesFromServer(true);
             }, 3000);
@@ -129,12 +128,14 @@
 
         function switchTab(tab) {
             document.getElementById('tab-recrutement').classList.toggle('active', tab === 'recrutement');
-            document.getElementById('tab-joueurs').classList.toggle('active', tab === 'joueurs');
             document.getElementById('tab-membres').classList.toggle('active', tab === 'membres');
-
+            
             document.getElementById('section-recrutement').style.display = tab === 'recrutement' ? 'block' : 'none';
-            document.getElementById('section-joueurs').style.display = tab === 'joueurs' ? 'block' : 'none';
             document.getElementById('section-membres').style.display = tab === 'membres' ? 'block' : 'none';
+            
+            if (tab === 'membres') {
+                loadDiscordMembers();
+            }
         }
 
         async function loadCandidaturesFromServer(silent = false) {
@@ -142,6 +143,7 @@
                 let response = await fetch('/api/candidatures');
                 if (response.ok) {
                     candidaturesListCache = await response.json();
+                    
                     if (!silent || activeTicketIndex === null) {
                         renderCandidatures();
                     }
@@ -151,6 +153,40 @@
                 }
             } catch (err) {
                 console.error("Erreur chargement candidatures :", err);
+            }
+        }
+
+        async function loadDiscordMembers() {
+            const container = document.getElementById('discordMembersList');
+            try {
+                let response = await fetch('/api/discord-members');
+                if (response.ok) {
+                    let members = await response.json();
+                    if (members.length === 0) {
+                        container.innerHTML = `<div class="col-12 text-center text-muted my-5"><h5>Aucun membre trouvé.</h5></div>`;
+                        return;
+                    }
+                    container.innerHTML = '';
+                    members.forEach(member => {
+                        const col = document.createElement('div');
+                        col.className = 'col-md-4';
+                        col.innerHTML = `
+                            <div class="member-card">
+                                <img src="${member.avatar || 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/svgs/solid/user.svg'}" class="member-avatar" alt="Avatar">
+                                <div>
+                                    <h6 class="font-orbitron mb-1 text-white">${escapeHtml(member.username)}</h6>
+                                    <span class="badge bg-secondary" style="font-size: 0.75rem;">${escapeHtml(member.role || 'Membre')}</span>
+                                </div>
+                            </div>
+                        `;
+                        container.appendChild(col);
+                    });
+                } else {
+                    container.innerHTML = `<div class="col-12 text-center text-danger my-5"><h5>Erreur lors de la récupération des membres Discord. Assurez-vous que l'API est configurée.</h5></div>`;
+                }
+            } catch (err) {
+                console.error("Erreur chargement membres Discord :", err);
+                container.innerHTML = `<div class="col-12 text-center text-danger my-5"><h5>Impossible de se connecter au serveur pour synchroniser les membres.</h5></div>`;
             }
         }
 
@@ -164,24 +200,12 @@
             }
         }
 
-        async function clearCandidaturesList() {
-            if (!confirm("Voulez-vous vraiment vider toutes les candidatures ?")) return;
-            try {
-                await fetch('/api/candidatures', { method: 'DELETE' });
-                candidaturesListCache = [];
-                closeTicketView();
-                renderCandidatures();
-            } catch (err) {
-                console.error("Erreur lors de la suppression :", err);
-            }
-        }
-
         function renderCandidatures() {
             const container = document.getElementById('candidaturesList');
             let list = candidaturesListCache;
 
             if (list.length === 0) {
-                container.innerHTML = `<div class="col-12 text-center text-muted my-5"><h5>Aucune candidature n'a été soumise pour le moment.</h5></div>`;
+                container.innerHTML = `<div class="col-12 text-center text-muted my-5"><h5>Aucune candidature pour le moment.</h5></div>`;
                 return;
             }
 
