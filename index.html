@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASPEN RP - Accueil</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-dark: #050508;
+            --bg-card: #0b0d17;
+            --accent-pink: #f72585;
+            --secondary-neon: #00f5d4;
+            --purple-glow: #7209b7;
+        }
+
+        
+        body {
+            background-color: var(--bg-dark);
+            color: #ffffff;
+            font-family: 'Rajdhani', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(114, 9, 183, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(247, 37, 133, 0.1) 0%, transparent 40%);
+        }
+
+        /* Navbar avec Logo Image */
+        .navbar-aspen {
+            background: rgba(10, 11, 18, 0.9);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(247, 37, 133, 0.3);
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-brand-custom {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .navbar-logo {
+            height: 38px;
+            width: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 0 8px rgba(0, 245, 212, 0.4));
+        }
+
+        .brand-text {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 1.4rem;
+            color: white;
+            letter-spacing: 2px;
+        }
+        .brand-text span { color: var(--accent-pink); text-shadow: 0 0 10px rgba(247, 37, 133, 0.6); }
+
+        .nav-links {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .nav-link-custom {
+            color: #94a3b8;
+            text-decoration: none;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .nav-link-custom:hover, .nav-link-custom.active { 
+            color: var(--secondary-neon); 
+            text-shadow: 0 0 10px rgba(0, 245, 212, 0.5);
+        }
+
+        /* Section Hero Immersive */
+        .hero-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 50px 20px;
+        }
+
+        .hero-badge {
+            background: rgba(0, 245, 212, 0.1);
+            border: 1px solid var(--secondary-neon);
+            color: var(--secondary-neon);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 15px rgba(0, 245, 212, 0.2);
+        }
+
+        .hero-title {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 3.5rem;
+            letter-spacing: 3px;
+            margin-bottom: 15px;
+            text-shadow: 0 0 30px rgba(247, 37, 133, 0.3);
+            line-height: 1.1;
+        }
+        .hero-title span { color: var(--secondary-neon); }
+
+        .hero-subtitle {
+            font-size: 1.15rem;
+            color: #94a3b8;
+            max-width: 600px;
+            margin-bottom: 40px;
+            line-height: 1.5;
+        }
+
+        /* Grille des catégories (3 cartes) */
+        .cards-container {
+            max-width: 900px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 0 20px 70px 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 25px;
+        }
+
+        .action-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(114, 9, 183, 0.4);
+            border-radius: 16px;
+            padding: 25px 20px;
+            text-align: left;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .action-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 3px;
+            background: linear-gradient(90deg, var(--purple-glow), var(--accent-pink));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .action-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--secondary-neon);
+            box-shadow: 0 15px 35px rgba(0, 245, 212, 0.15);
+        }
+
+        .action-card:hover::before {
+            opacity: 1;
+            background: linear-gradient(90deg, var(--secondary-neon), var(--accent-pink));
+        }
+
+        .card-top {
+            margin-bottom: 20px;
+        }
+
+        .action-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            color: var(--secondary-neon);
+            margin-bottom: 15px;
+            transition: 0.3s;
+        }
+
+        .action-card:hover .action-icon {
+            background: rgba(0, 245, 212, 0.1);
+            border-color: var(--secondary-neon);
+            box-shadow: 0 0 15px rgba(0, 245, 212, 0.3);
+        }
+
+        .action-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .action-desc {
+            color: #8892b0;
+            font-size: 0.88rem;
+            line-height: 1.4;
+            margin-bottom: 0;
+        }
+
+        /* Boutons stylisés */
+        .card-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            letter-spacing: 1px;
+        }
+
+        .btn-boutique {
+            background: rgba(255, 190, 11, 0.1);
+            border: 1px solid rgba(255, 190, 11, 0.4);
+            color: #ffbe0b;
+        }
+        .btn-boutique:hover {
+            background: #ffbe0b;
+            color: #000;
+            box-shadow: 0 0 15px rgba(255, 190, 11, 0.4);
+        }
+
+        .btn-discord {
+            background: rgba(88, 101, 242, 0.15);
+            border: 1px solid rgba(88, 101, 242, 0.4);
+            color: #5865F2;
+        }
+        .btn-discord:hover {
+            background: #5865F2;
+            color: white;
+            box-shadow: 0 0 15px rgba(88, 101, 242, 0.4);
+        }
+
+        .btn-recrutement {
+            background: linear-gradient(45deg, #7209b7, var(--accent-pink));
+            color: white;
+            border: none;
+        }
+        .btn-recrutement:hover {
+            opacity: 0.95;
+            color: white;
+            box-shadow: 0 0 20px rgba(247, 37, 133, 0.5);
+        }
+
+        /* Footer pro */
+        footer {
+            text-align: center;
+            padding: 20px;
+            background: rgba(8, 9, 14, 0.95);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: #64748b;
+            font-size: 0.85rem;
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar-aspen">
+        <a href="index.html" class="navbar-brand-custom">
+            <img src="logo.png" alt="Logo Aspen" class="navbar-logo">
+            <span class="brand-text">ASPEN<span>RP</span></span>
+        </a>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link-custom active"><i class="fa-solid fa-house"></i> Accueil</a>
+            <a href="http://localhost:3000/boutique.html" class="nav-link-custom"><i class="fa-solid fa-store"></i> Boutique</a>
+            <a href="https://discord.gg/sPxk5JvXrH" target="_blank" class="nav-link-custom"><i class="fa-brands fa-discord"></i> Discord</a>
+            <a href="recrutement.html" class="nav-link-custom"><i class="fa-solid fa-robot"></i> Recrutement</a>
+            <a href="moderateur.html" class="nav-link-custom"><i class="fa-solid fa-shield-halved"></i> Panel Staff</a>
+        </div>
+    </nav>
+
+    <div class="hero-section">
+        <div class="hero-badge"><i class="fa-solid fa-circle-dot me-2 text-success"></i> SERVEUR OUVERT • WL OFF</div>
+        <h1 class="hero-title">BIENVENUE SUR <span>ASPEN RP</span></h1>
+        <p class="hero-subtitle">Plonge dans une expérience Roleplay immersive. Explore notre boutique, rejoins notre communauté ou dépose ta candidature.</p>
+    </div>
+
+    <div class="cards-container">
+        
+        <div class="action-card" id="boutique">
+            <div class="card-top">
+                <div class="action-icon" style="color: #ffbe0b;"><i class="fa-solid fa-store"></i></div>
+                <h3 class="action-title">BOUTIQUE</h3>
+                <p class="action-desc">Découvre nos grades VIP, véhicules exclusifs et avantages pour le serveur.</p>
+            </div>
+            <a href="http://localhost:3000/boutique.html" class="card-btn btn-boutique">
+                <span>Boutique</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </a>
+        </div>
+
+        <div class="action-card">
+            <div class="card-top">
+                <div class="action-icon" style="color: #5865F2;"><i class="fa-brands fa-discord"></i></div>
+                <h3 class="action-title">DISCORD</h3>
+                <p class="action-desc">Rejoins notre communauté officielle pour échanger, voir les annonces et ouvrir des tickets.</p>
+            </div>
+            <a href="https://discord.gg/sPxk5JvXrH" target="_blank" class="card-btn btn-discord">
+                <span>Discord</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </a>
+        </div>
+
+        <div class="action-card">
+            <div class="card-top">
+                <div class="action-icon" style="color: var(--accent-pink);"><i class="fa-solid fa-robot"></i></div>
+                <h3 class="action-title">RECRUTEMENT</h3>
+                <p class="action-desc">Postule pour intégrer l'équipe ou suis ton dossier en direct avec notre assistant IA.</p>
+            </div>
+            <a href="recrutement.html" class="card-btn btn-recrutement">
+                <span>Recrutement</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </a>
+        </div>
+
+    </div>
+
+    <footer>
+        <p class="mb-0">&copy; 2026 ASPEN RP — TOUS DROITS RÉSERVÉS</p>
+    </footer>
+
+</body>
+</html>
