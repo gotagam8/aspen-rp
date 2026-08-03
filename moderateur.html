@@ -3,198 +3,222 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ASPEN STAFF - Espace Modération</title>
+    <title>AspenStaff - Administration</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
     <style>
         :root {
-            --bg-dark: #07070a;
-            --bg-card: #0b0c14;
-            --accent-pink: #f72585;
-            --secondary-neon: #00f5d4;
-            --purple-glow: #3b1747;
+            --bg-color: #0b090a;
+            --panel-bg: #100e14;
+            --accent-pink: #ff007f;
+            --accent-cyan: #00f5d4;
         }
+        body { background-color: var(--bg-color); color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; margin: 0; }
+        
+        .navbar-top { background: var(--panel-bg); border-bottom: 1px solid rgba(255, 0, 127, 0.3); padding: 12px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .logo-text { color: var(--accent-pink); font-weight: 900; letter-spacing: 1px; font-size: 1.1rem; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+        
+        .btn-return { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; padding: 5px 15px; font-size: 0.85rem; cursor: pointer; transition: 0.2s; }
+        .btn-return:hover { border-color: var(--accent-pink); background: rgba(255,0,127,0.1); }
 
-        body { background-color: var(--bg-dark); color: white; font-family: 'Rajdhani', sans-serif; min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; }
-        .font-orbitron { font-family: 'Orbitron', sans-serif; }
-        
-        .header-bar { background: rgba(10, 10, 15, 0.95); border-bottom: 2px solid var(--accent-pink); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
-        
-        .cand-card { background: var(--bg-card); border: 1px solid var(--purple-glow); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-        
-        .status-badge { padding: 4px 12px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; text-transform: uppercase; }
-        .status-En-attente { background: #ffbe0b; color: #000; }
-        .status-Accepté { background: #38b000; color: #fff; }
-        .status-Refusé { background: #d90429; color: #fff; }
+        .sub-nav { display: flex; gap: 25px; padding: 15px 30px; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 0.95rem; }
+        .sub-tab { color: #8c8896; text-decoration: none; display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 500; padding-bottom: 5px; }
+        .sub-tab.active { color: var(--accent-cyan); border-bottom: 2px solid var(--accent-cyan); }
 
-        .ticket-box { background: var(--bg-card); border: 2px solid var(--accent-pink); border-radius: 12px; padding: 20px; margin-top: 20px; }
-        .ticket-messages { height: 300px; overflow-y: auto; background: #07080e; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 15px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+        .content-area { padding: 30px; max-width: 1100px; margin: 0 auto; width: 100%; flex: 1; }
         
-        footer { text-align: center; padding: 20px; background: rgba(8, 9, 14, 0.95); border-top: 1px solid rgba(255, 255, 255, 0.05); color: #64748b; font-size: 0.85rem; font-family: 'Orbitron', sans-serif; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .section-title { font-size: 1.25rem; font-weight: bold; display: flex; align-items: center; gap: 10px; color: white; }
+        .section-title i { color: #ffbe0b; }
+
+        .btn-action-outline { background: transparent; border: 1px solid #ffbe0b; color: #ffbe0b; border-radius: 6px; padding: 6px 14px; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+        .btn-action-danger { background: transparent; border: 1px solid #ff4d6d; color: #ff4d6d; border-radius: 6px; padding: 6px 14px; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+        
+        .cand-card { background: var(--panel-bg); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        
+        .ticket-view-box { background: var(--panel-bg); border: 1px solid rgba(255, 0, 127, 0.4); border-radius: 10px; padding: 25px; }
+        .ticket-chat { height: 300px; background: #070609; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 15px; overflow-y: auto; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; }
+
+        footer { text-align: center; padding: 15px; color: #6c757d; font-size: 0.8rem; border-top: 1px solid rgba(255,255,255,0.04); }
     </style>
 </head>
 <body>
 
     <div>
-        <div class="header-bar">
-            <h4 class="font-orbitron mb-0" style="color: var(--accent-pink);"><i class="fa-solid fa-shield-halved me-2"></i>ASPEN<span class="text-white">STAFF</span></h4>
-            <a href="recrutement.html" class="btn btn-outline-light btn-sm font-orbitron">Retour au recrutement</a>
+        <div class="navbar-top">
+            <div class="logo-text"><i class="fa-solid fa-shield-halved"></i> ASPENSTAFF</div>
+            <button class="btn-return" onclick="window.location.href='recrutement.html'">Retour au site</button>
         </div>
 
-        <div class="container py-4">
-            <div id="candidaturesHeaderContainer" class="d-flex justify-content-between align-items-center mb-4">
-                <h3 class="font-orbitron mb-0"><i class="fa-solid fa-folder-open me-2 text-warning"></i>CANDIDATURES REÇUES</h3>
-                <button class="btn btn-outline-danger btn-sm font-orbitron" onclick="clearAllCandidatures()"><i class="fa-solid fa-trash me-1"></i> Vider la liste</button>
-            </div>
-            
-            <div id="candidaturesList" class="row"></div>
+        <div class="sub-nav">
+            <a class="sub-tab active" onclick="switchMainTab('recrutement', event)"><i class="fa-solid fa-user-plus"></i> Recrutement & Tickets</a>
+            <a class="sub-tab" onclick="switchMainTab('joueurs', event)"><i class="fa-solid fa-database"></i> Joueurs</a>
+            <a class="sub-tab" onclick="switchMainTab('membres', event)"><i class="fa-solid fa-users"></i> Membres Discord</a>
+        </div>
 
-            <div id="ticketSection" style="display: none;" class="ticket-box">
-                <div class="d-flex justify-content-between align-items-center mb-3 border-bottom border-secondary pb-2">
-                    <h5 class="font-orbitron mb-0 text-info"><i class="fa-solid fa-ticket me-2"></i>TICKET DE : <span id="ticketCandidateName" class="text-white text-uppercase"></span></h5>
-                    <button class="btn btn-outline-secondary btn-sm font-orbitron" onclick="closeTicketView()"><i class="fa-solid fa-arrow-left me-1"></i> Retour</button>
+        <div class="content-area">
+            <div id="tabRecrutement">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="fa-solid fa-folder-open"></i> CANDIDATURES REÇUES
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn-action-outline">Candidature importante</button>
+                        <button class="btn-action-danger" onclick="clearAll()"><i class="fa-solid fa-trash"></i> Vider la liste</button>
+                    </div>
                 </div>
-                <div id="ticketMessagesContainer" class="ticket-messages"></div>
-                <div class="input-group">
-                    <input type="text" id="staffTicketInput" class="form-control bg-dark text-white border-secondary" placeholder="Écris ton message..." onkeypress="handleTicketKey(event)">
-                    <button class="btn btn-info font-orbitron text-dark fw-bold px-4" style="background: var(--secondary-neon); border: none;" onclick="sendTicketMessage()"><i class="fa-solid fa-paper-plane me-1"></i> Envoyer</button>
+
+                <div id="candidaturesListContainer">
+                    </div>
+
+                <div id="ticketInterface" style="display: none;" class="ticket-view-box">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0 text-info" id="ticketTitle">TICKET</h5>
+                        <button class="btn btn-sm btn-secondary" onclick="closeTicket()"><i class="fa-solid fa-arrow-left"></i> Retour</button>
+                    </div>
+                    <div class="ticket-chat" id="ticketChatBox"></div>
+                    <div class="input-group">
+                        <input type="text" id="staffInput" class="form-control bg-dark text-white border-secondary" placeholder="Écris ta réponse au candidat..." onkeypress="handleStaffKey(event)">
+                        <button class="btn btn-success px-4" onclick="sendStaffMsg()"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tabJoueurs" style="display: none;">
+                <div class="section-title mb-3"><i class="fa-solid fa-database"></i> GESTION DES JOUEURS</div>
+                <p class="text-muted">Aucune donnée de joueur connectée pour le moment.</p>
+            </div>
+
+            <div id="tabMembres" style="display: none;">
+                <div class="section-header">
+                    <div class="section-title"><i class="fa-solid fa-users"></i> GESTION DES MEMBRES DISCORD</div>
+                    <button class="btn btn-outline-info btn-sm"><i class="fa-solid fa-plus"></i> Ajouter un membre</button>
+                </div>
+                <div class="text-center text-danger my-5" style="font-size: 0.95rem;">
+                    Impossible de charger les membres du bot. Vérifie que ton serveur Node.js est bien démarré.
                 </div>
             </div>
         </div>
     </div>
 
     <footer>
-        <p class="mb-0">&copy; 2026 ASPEN RP — TOUS DROITS RÉSERVÉS</p>
+        &copy; 2026 ASPEN RP — TOUS DROITS RÉSERVÉS
     </footer>
 
     <script>
-        let activeTicketIndex = null;
+        let activeIndex = null;
 
         document.addEventListener('DOMContentLoaded', () => {
             renderCandidatures();
-            setInterval(() => {
-                if (activeTicketIndex === null) {
-                    renderCandidatures();
-                } else {
-                    renderTicketMessages();
-                }
-            }, 1000);
         });
 
+        function switchMainTab(tabName, e) {
+            document.querySelectorAll('.sub-tab').forEach(el => el.classList.remove('active'));
+            if(e && e.currentTarget) e.currentTarget.classList.add('active');
+
+            document.getElementById('tabRecrutement').style.display = tabName === 'recrutement' ? 'block' : 'none';
+            document.getElementById('tabJoueurs').style.display = tabName === 'joueurs' ? 'block' : 'none';
+            document.getElementById('tabMembres').style.display = tabName === 'membres' ? 'block' : 'none';
+        }
+
         function renderCandidatures() {
-            const container = document.getElementById('candidaturesList');
+            const container = document.getElementById('candidaturesListContainer');
             let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
 
             if (list.length === 0) {
-                container.innerHTML = `<div class="col-12 text-center text-muted my-5"><h5>Aucune candidature n'a été soumise pour le moment.</h5></div>`;
+                container.innerHTML = `<div class="text-center text-muted my-5" style="font-size: 0.95rem;">Aucune candidature n'a été soumise pour le moment.</div>`;
                 return;
             }
 
-            let htmlContent = '';
-            list.forEach((item, index) => {
-                let statusClass = (item.status || 'En-attente').replace(' ', '-');
-                htmlContent += `
-                    <div class="col-md-6">
-                        <div class="cand-card">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h5 class="font-orbitron mb-0"><i class="fa-brands fa-discord me-2 text-primary"></i>${escapeHtml(item.discord)}</h5>
-                                <span class="status-badge status-${statusClass}">${item.status || 'En attente'}</span>
-                            </div>
-                            <p class="mb-1"><strong>Poste :</strong> ${escapeHtml(item.poste)}</p>
-                            <p class="mb-3"><strong>Motivations :</strong> ${escapeHtml(item.motivations)}</p>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-success btn-sm flex-fill" onclick="updateStatus(${index}, 'Accepté')">Accepter</button>
-                                <button class="btn btn-danger btn-sm flex-fill" onclick="updateStatus(${index}, 'Refusé')">Refuser</button>
-                                <button class="btn btn-outline-info btn-sm flex-fill font-orbitron" onclick="openTicket(${index})"><i class="fa-solid fa-envelope me-1"></i> Ticket</button>
-                            </div>
+            let html = '';
+            list.forEach((c, idx) => {
+                html += `
+                    <div class="cand-card">
+                        <div>
+                            <h5 style="color: var(--accent-pink); margin-bottom: 5px;">${escapeHtml(c.discord)}</h5>
+                            <p class="mb-1"><strong>Poste :</strong> ${escapeHtml(c.poste)}</p>
+                            <p class="mb-0 text-muted" style="font-size: 0.9rem;"><strong>Motivations :</strong> ${escapeHtml(c.motivations)}</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <span class="badge bg-warning text-dark align-self-center">${c.status || 'En attente'}</span>
+                            <button class="btn btn-sm btn-primary" onclick="openTicket(${idx})"><i class="fa-solid fa-comments"></i> Ticket</button>
                         </div>
                     </div>
                 `;
             });
-            container.innerHTML = htmlContent;
+            container.innerHTML = html;
         }
 
-        function openTicket(index) {
-            activeTicketIndex = index;
+        function openTicket(idx) {
+            activeIndex = idx;
             let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
-            const candidate = list[index];
+            let c = list[idx];
 
-            document.getElementById('ticketCandidateName').innerText = candidate.discord;
-            document.getElementById('candidaturesHeaderContainer').style.display = 'none';
-            document.getElementById('candidaturesList').style.display = 'none';
-            document.getElementById('ticketSection').style.display = 'block';
-            renderTicketMessages();
+            document.getElementById('candidaturesListContainer').style.display = 'none';
+            document.querySelector('.section-header').style.display = 'none';
+            document.getElementById('ticketInterface').style.display = 'block';
+            document.getElementById('ticketTitle').innerText = `TICKET DE : ${c.discord.toUpperCase()}`;
+            renderMessages();
         }
 
-        function closeTicketView() {
-            activeTicketIndex = null;
-            document.getElementById('ticketSection').style.display = 'none';
-            document.getElementById('candidaturesHeaderContainer').style.display = 'flex';
-            document.getElementById('candidaturesList').style.display = 'flex';
+        function closeTicket() {
+            activeIndex = null;
+            document.getElementById('ticketInterface').style.display = 'none';
+            document.getElementById('candidaturesListContainer').style.display = 'block';
+            document.querySelector('.section-header').style.display = 'flex';
             renderCandidatures();
         }
 
-        function renderTicketMessages() {
+        function renderMessages() {
             let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
-            if (activeTicketIndex === null || !list[activeTicketIndex]) return;
+            if (activeIndex === null || !list[activeIndex]) return;
+            let c = list[activeIndex];
+            let box = document.getElementById('ticketChatBox');
 
-            const candidate = list[activeTicketIndex];
-            const container = document.getElementById('ticketMessagesContainer');
-            
-            let messagesHtml = '';
-            if (!candidate.messages || candidate.messages.length === 0) {
-                messagesHtml = `<div class="text-center text-muted my-auto">Aucun message pour l'instant.</div>`;
+            let msgs = '';
+            if (!c.messages || c.messages.length === 0) {
+                msgs = `<div class="text-muted text-center my-auto">Aucun message pour l'instant.</div>`;
             } else {
-                candidate.messages.forEach(m => {
-                    const isStaff = m.sender === 'Staff';
-                    messagesHtml += `
-                        <div style="background: ${isStaff ? 'var(--accent-pink)' : '#151828'}; padding: 8px 12px; border-radius: 8px; margin-bottom: 5px; max-width: 80%; align-self: ${isStaff ? 'flex-end' : 'flex-start'};">
-                            <div style="font-size: 0.75rem; opacity: 0.8;"><strong>${escapeHtml(m.sender)}</strong> • ${m.date || ''}</div>
-                            <div>${escapeHtml(m.text)}</div>
+                c.messages.forEach(m => {
+                    let isStaff = m.sender === 'Staff';
+                    msgs += `
+                        <div style="background: ${isStaff ? 'var(--accent-pink)' : '#16131d'}; padding: 8px 12px; border-radius: 6px; max-width: 75%; align-self: ${isStaff ? 'flex-end' : 'flex-start'};">
+                            <strong style="font-size: 0.8rem; opacity:0.9;">${escapeHtml(m.sender)}</strong><br>
+                            ${escapeHtml(m.text)}
                         </div>
                     `;
                 });
             }
-            container.innerHTML = messagesHtml;
-            container.scrollTop = container.scrollHeight;
+            box.innerHTML = msgs;
+            box.scrollTop = box.scrollHeight;
         }
 
-        function handleTicketKey(e) {
-            if (e.key === 'Enter') sendTicketMessage();
+        function handleStaffKey(e) {
+            if (e.key === 'Enter') sendStaffMsg();
         }
 
-        function sendTicketMessage() {
-            const input = document.getElementById('staffTicketInput');
-            const text = input.value.trim();
-            if (!text || activeTicketIndex === null) return;
+        function sendStaffMsg() {
+            let input = document.getElementById('staffInput');
+            let text = input.value.trim();
+            if (!text || activeIndex === null) return;
 
             let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
-            if (!list[activeTicketIndex].messages) list[activeTicketIndex].messages = [];
+            if (!list[activeIndex].messages) list[activeIndex].messages = [];
 
-            list[activeTicketIndex].messages.push({
+            list[activeIndex].messages.push({
                 sender: 'Staff',
-                date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                text: text
+                text: text,
+                time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
             });
 
             localStorage.setItem('aspen_candidatures', JSON.stringify(list));
             input.value = '';
-            renderTicketMessages();
+            renderMessages();
         }
 
-        function updateStatus(index, newStatus) {
-            let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
-            list[index].status = newStatus;
-            localStorage.setItem('aspen_candidatures', JSON.stringify(list));
-            renderCandidatures();
-        }
-
-        function clearAllCandidatures() {
-            if (confirm("Voulez-vous vraiment tout supprimer ?")) {
+        function clearAll() {
+            if(confirm("Voulez-vous tout supprimer ?")) {
                 localStorage.removeItem('aspen_candidatures');
-                closeTicketView();
                 renderCandidatures();
             }
         }
