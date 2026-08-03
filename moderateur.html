@@ -52,22 +52,13 @@
             color: #8ea1ff; font-size: 0.72rem; padding: 2px 8px; border-radius: 5px;
             font-family: 'Orbitron', sans-serif; display: flex; align-items: center; gap: 5px;
         }
-        .role-badge.admin { background: rgba(247, 37, 133, 0.2); border-color: rgba(247, 37, 133, 0.4); color: var(--accent-pink); }
-        .role-remove { cursor: pointer; opacity: 0.7; font-size: 0.6rem; }
-        .role-remove:hover { opacity: 1; color: #ff4d4d; }
-
         .member-actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; }
         .btn-action { padding: 5px 8px; border-radius: 6px; font-family: 'Orbitron', sans-serif; font-size: 0.68rem; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; }
         .btn-promote { background: rgba(0, 245, 212, 0.1); border: 1px solid rgba(0, 245, 212, 0.3); color: var(--secondary-neon); }
-        .btn-promote:hover { background: var(--secondary-neon); color: #000; }
         .btn-mute { background: rgba(255, 190, 11, 0.1); border: 1px solid rgba(255, 190, 11, 0.3); color: #ffbe0b; }
-        .btn-mute:hover { background: #ffbe0b; color: #000; }
         .btn-kick { background: rgba(249, 115, 22, 0.1); border: 1px solid rgba(249, 115, 22, 0.3); color: #f97316; }
-        .btn-kick:hover { background: #f97316; color: white; }
         .btn-ban { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; }
-        .btn-ban:hover { background: #ef4444; color: white; }
         .btn-add-role { grid-column: span 2; background: rgba(255, 255, 255, 0.05); border: 1px dashed rgba(255, 255, 255, 0.2); color: #94a3b8; }
-        .btn-add-role:hover { background: rgba(255, 255, 255, 0.1); color: white; border-color: white; }
 
         footer { text-align: center; padding: 20px; background: rgba(8, 9, 14, 0.95); border-top: 1px solid rgba(255, 255, 255, 0.05); color: #64748b; font-size: 0.85rem; font-family: 'Orbitron', sans-serif; letter-spacing: 1px; }
     </style>
@@ -102,7 +93,7 @@
                     <h3 class="font-orbitron mb-0"><i class="fa-solid fa-folder-open me-2 text-warning"></i>CANDIDATURES REÇUES</h3>
                     <div class="d-flex gap-2">
                         <button class="btn btn-outline-warning btn-sm font-orbitron" onclick="sendUrgentAlert()">
-                            <i class="fa-solid fa-triangle-exclamation me-1"></i> Candidature importante
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i> Alerte Staff
                         </button>
                         <button class="btn btn-outline-danger btn-sm font-orbitron" onclick="clearAllCandidatures()"><i class="fa-solid fa-trash me-1"></i> Vider la liste</button>
                     </div>
@@ -131,7 +122,6 @@
             <div id="section-membres" style="display: none;">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h3 class="font-orbitron mb-0"><i class="fa-solid fa-users-gear me-2 text-success"></i>GESTION DES MEMBRES DISCORD</h3>
-                    <button class="btn btn-outline-info btn-sm font-orbitron" onclick="addNewDiscordMember()"><i class="fa-solid fa-user-plus me-1"></i> Ajouter un membre</button>
                 </div>
                 <div class="mb-4">
                     <input type="text" id="searchDiscordMember" class="form-control bg-dark text-white border-secondary" placeholder="Rechercher un membre par son pseudo Discord..." onkeyup="filterDiscordMembers()">
@@ -148,10 +138,10 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let activeTicketIndex = null;
+        let candidaturesListCache = [];
 
         document.addEventListener('DOMContentLoaded', () => {
-            renderCandidatures();
-            renderPlayers();
+            loadCandidaturesFromServer();
             renderDiscordMembers();
         });
 
@@ -165,7 +155,19 @@
             document.getElementById('section-membres').style.display = tab === 'membres' ? 'block' : 'none';
         }
 
-        // --- FONCTION POUR ENVOYER L'ALERTE URGENTE AU BOT ---
+        async function loadCandidaturesFromServer() {
+            try {
+                let response = await fetch('/api/candidatures');
+                if (response.ok) {
+                    candidaturesListCache = await response.json();
+                    renderCandidatures();
+                    renderPlayers();
+                }
+            } catch (err) {
+                console.error("Erreur chargement candidatures :", err);
+            }
+        }
+
         async function sendUrgentAlert() {
             if (!confirm("Voulez-vous envoyer une alerte urgente sur votre Discord ?")) return;
 
@@ -187,10 +189,9 @@
             }
         }
 
-        // --- GESTION RECRUTEMENT & TICKETS ---
         function renderCandidatures() {
             const container = document.getElementById('candidaturesList');
-            let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
+            let list = candidaturesListCache;
 
             if (list.length === 0) {
                 container.innerHTML = `<div class="col-12 text-center text-muted my-5"><h5>Aucune candidature n'a été soumise pour le moment.</h5></div>`;
@@ -237,8 +238,7 @@
 
         function openTicket(index) {
             activeTicketIndex = index;
-            let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
-            const candidate = list[index];
+            const candidate = candidaturesListCache[index];
 
             document.getElementById('ticketCandidateName').innerText = candidate.discord;
             document.getElementById('candidaturesList').style.display = 'none';
@@ -254,10 +254,9 @@
         }
 
         function renderTicketMessages() {
-            let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
-            if (activeTicketIndex === null || !list[activeTicketIndex]) return;
+            if (activeTicketIndex === null || !candidaturesListCache[activeTicketIndex]) return;
 
-            const candidate = list[activeTicketIndex];
+            const candidate = candidaturesListCache[activeTicketIndex];
             const container = document.getElementById('ticketMessagesContainer');
             container.innerHTML = '';
 
@@ -285,42 +284,40 @@
             const text = input.value.trim();
             if (!text || activeTicketIndex === null) return;
 
-            let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
-            if (!list[activeTicketIndex].messages) list[activeTicketIndex].messages = [];
+            if (!candidaturesListCache[activeTicketIndex].messages) {
+                candidaturesListCache[activeTicketIndex].messages = [];
+            }
 
             const now = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            list[activeTicketIndex].messages.push({
+            candidaturesListCache[activeTicketIndex].messages.push({
                 sender: 'Staff',
                 date: now,
                 text: text
             });
 
-            localStorage.setItem('aspen_candidatures', JSON.stringify(list));
             input.value = '';
             renderTicketMessages();
+            renderCandidatures();
         }
 
         function updateStatus(index, newStatus) {
-            let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
-            list[index].status = newStatus;
-            localStorage.setItem('aspen_candidatures', JSON.stringify(list));
+            candidaturesListCache[index].status = newStatus;
             renderCandidatures();
             renderPlayers();
         }
 
         function clearAllCandidatures() {
             if(confirm("Voulez-vous vraiment tout supprimer ?")) {
-                localStorage.removeItem('aspen_candidatures');
+                candidaturesListCache = [];
                 closeTicketView();
                 renderCandidatures();
                 renderPlayers();
             }
         }
 
-        // --- GESTION SECTION JOUEURS ---
         function renderPlayers() {
             const container = document.getElementById('playersList');
-            let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
+            let list = candidaturesListCache;
 
             if (list.length === 0) {
                 container.innerHTML = `<div class="col-12 text-center text-muted my-5"><h5>Aucun joueur enregistré.</h5></div>`;
@@ -342,7 +339,6 @@
             });
         }
 
-        // --- GESTION MEMBRES DISCORD ---
         async function renderDiscordMembers() {
             const container = document.getElementById('discordMembersList');
             container.innerHTML = `<div class="col-12 text-center text-muted my-5"><h5>Chargement des membres du serveur Discord...</h5></div>`;
@@ -424,10 +420,6 @@
                 let name = cards[i].getAttribute('data-name');
                 cards[i].style.display = name && name.includes(input) ? 'block' : 'none';
             }
-        }
-
-        function addNewDiscordMember() {
-            alert("Pour ajouter un nouveau membre, invite-le directement sur ton serveur Discord !");
         }
 
         function escapeHtml(text) {
