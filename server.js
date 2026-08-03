@@ -89,7 +89,7 @@ app.post('/api/urgent-alert', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`✅ Serveur prêt sur http://localhost:${PORT}`);
-    console.log(`🌐 Accès Espace Modérateur : http://localhost:${PORT}/moderateur.html`);
-    console.log(`🌐 Accès Boutique : http://localhost:${PORT}/boutique.html`);
+    console.log(`✅ Serveur prêt sur https://aspenrp.onrender.com/index.html`);
+    console.log(`🌐 Accès Espace Modérateur : https://aspenrp.onrender.com/moderateur.html`);
+    console.log(`🌐 Accès Boutique : https://aspenrp.onrender.com/boutique.html`);
 });
