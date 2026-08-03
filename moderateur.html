@@ -3,457 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ASPEN STAFF - Espace Modération & Membres</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <title>Aspen Staff - Gestion des Candidatures</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --bg-dark: #07070a;
-            --bg-card: #0b0c14;
+            --bg-color: #0b090a;
+            --panel-bg: #161a1d;
             --accent-pink: #f72585;
-            --secondary-neon: #00f5d4;
-            --purple-glow: #3b1747;
+            --text-color: #ffffff;
         }
-
-        body { background-color: var(--bg-dark); color: white; font-family: 'Rajdhani', sans-serif; min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; }
-        .font-orbitron { font-family: 'Orbitron', sans-serif; }
-        
-        .header-bar { background: rgba(10, 10, 15, 0.95); border-bottom: 2px solid var(--accent-pink); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
-        
-        .cand-card { background: var(--bg-card); border: 1px solid var(--purple-glow); border-radius: 12px; padding: 20px; margin-bottom: 20px; transition: 0.3s; }
-        .cand-card:hover { border-color: var(--secondary-neon); box-shadow: 0 5px 15px rgba(0, 245, 212, 0.1); }
-
-        .status-badge { padding: 4px 12px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; text-transform: uppercase; }
-        .status-En-attente { background: #ffbe0b; color: #000; }
-        .status-Accepté { background: #38b000; color: #fff; }
-        .status-Refusé { background: #d90429; color: #fff; }
-
-        .nav-tabs .nav-link { color: #a0aec0; border: none; font-family: 'Orbitron', sans-serif; font-weight: 600; cursor: pointer; }
-        .nav-tabs .nav-link.active { background: transparent; color: var(--secondary-neon); border-bottom: 2px solid var(--secondary-neon); }
-        
-        .ticket-box { background: var(--bg-card); border: 2px solid var(--accent-pink); border-radius: 12px; padding: 20px; margin-top: 20px; }
-        .ticket-messages { height: 300px; overflow-y: auto; background: #07080e; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 15px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
-        .msg-bubble { max-width: 80%; padding: 10px 14px; border-radius: 10px; font-size: 0.95rem; }
-        .msg-bubble.staff { align-self: flex-end; background: var(--accent-pink); color: white; }
-        .msg-bubble.user { align-self: flex-start; background: #151828; border-left: 3px solid var(--secondary-neon); color: #e2e8f0; }
-
-        .member-avatar {
-            width: 45px; height: 45px; border-radius: 50%;
-            background: linear-gradient(45deg, #7209b7, var(--accent-pink));
-            display: flex; align-items: center; justify-content: center;
-            font-family: 'Orbitron', sans-serif; font-weight: 700; color: white;
-            border: 2px solid var(--secondary-neon); flex-shrink: 0;
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
-        .roles-container { display: flex; flex-wrap: wrap; gap: 5px; margin: 12px 0; min-height: 30px; }
-        .role-badge {
-            background: rgba(88, 101, 242, 0.2); border: 1px solid rgba(88, 101, 242, 0.4);
-            color: #8ea1ff; font-size: 0.72rem; padding: 2px 8px; border-radius: 5px;
-            font-family: 'Orbitron', sans-serif; display: flex; align-items: center; gap: 5px;
+        .navbar-custom {
+            background: var(--panel-bg);
+            border-bottom: 2px solid var(--accent-pink);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        .role-badge.admin { background: rgba(247, 37, 133, 0.2); border-color: rgba(247, 37, 133, 0.4); color: var(--accent-pink); }
-        .role-remove { cursor: pointer; opacity: 0.7; font-size: 0.6rem; }
-        .role-remove:hover { opacity: 1; color: #ff4d4d; }
-
-        .member-actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; }
-        .btn-action { padding: 5px 8px; border-radius: 6px; font-family: 'Orbitron', sans-serif; font-size: 0.68rem; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; }
-        .btn-promote { background: rgba(0, 245, 212, 0.1); border: 1px solid rgba(0, 245, 212, 0.3); color: var(--secondary-neon); }
-        .btn-promote:hover { background: var(--secondary-neon); color: #000; }
-        .btn-mute { background: rgba(255, 190, 11, 0.1); border: 1px solid rgba(255, 190, 11, 0.3); color: #ffbe0b; }
-        .btn-mute:hover { background: #ffbe0b; color: #000; }
-        .btn-kick { background: rgba(249, 115, 22, 0.1); border: 1px solid rgba(249, 115, 22, 0.3); color: #f97316; }
-        .btn-kick:hover { background: #f97316; color: white; }
-        .btn-ban { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; }
-        .btn-ban:hover { background: #ef4444; color: white; }
-        .btn-add-role { grid-column: span 2; background: rgba(255, 255, 255, 0.05); border: 1px dashed rgba(255, 255, 255, 0.2); color: #94a3b8; }
-        .btn-add-role:hover { background: rgba(255, 255, 255, 0.1); color: white; border-color: white; }
-
-        footer { text-align: center; padding: 20px; background: rgba(8, 9, 14, 0.95); border-top: 1px solid rgba(255, 255, 255, 0.05); color: #64748b; font-size: 0.85rem; font-family: 'Orbitron', sans-serif; letter-spacing: 1px; }
+        .container-box {
+            background-color: var(--panel-bg);
+            border: 1px solid rgba(247, 37, 133, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 30px auto;
+            max-width: 900px;
+        }
+        .candidate-card {
+            background: #212529;
+            border-left: 4px solid var(--accent-pink);
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+            font-size: 0.85rem;
+        }
     </style>
 </head>
 <body>
 
-    <div>
-        <div class="header-bar">
-            <div class="d-flex align-items-center gap-3">
-                <h4 class="font-orbitron mb-0" style="color: var(--accent-pink);"><i class="fa-solid fa-shield-halved me-2"></i>ASPEN<span class="text-white">STAFF</span></h4>
-            </div>
-            <div class="d-flex align-items-center gap-3">
-                <a href="index.html" class="btn btn-outline-light btn-sm font-orbitron">Retour au site</a>
-            </div>
+    <div class="navbar-custom">
+        <h4 class="mb-0" style="color: var(--accent-pink); font-weight: bold;"><i class="fa-solid fa-shield"></i> ASPENSTAFF</h4>
+        <a href="recrutement.html" class="btn btn-outline-light btn-sm">Retour au site</a>
+    </div>
+
+    <div class="container my-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3><i class="fa-solid fa-folder-open"></i> CANDIDATURES REÇUES</h3>
+            <button class="btn btn-outline-danger btn-sm" onclick="clearList()"><i class="fa-solid fa-trash"></i> Vider la liste</button>
         </div>
 
-        <div class="container py-4">
-            <ul class="nav nav-tabs mb-4 border-bottom border-secondary" id="staffTabs">
-                <li class="nav-item">
-                    <button class="nav-link active" id="tab-recrutement" onclick="switchTab('recrutement')"><i class="fa-solid fa-user-plus me-2"></i>Recrutement & Tickets</button>
-                </li>
-                <li class="nav-item">
-                    <button class="nav-link" id="tab-annuaire" onclick="switchTab('annuaire')"><i class="fa-solid fa-database me-2"></i>Joueurs</button>
-                </li>
-                <li class="nav-item">
-                    <button class="nav-link" id="tab-membres" onclick="switchTab('membres')"><i class="fa-solid fa-users-gear me-2"></i>Membres Discord</button>
-                </li>
-            </ul>
-
-            <div id="section-recrutement">
-                <div id="candidaturesHeaderContainer" class="d-flex justify-content-between align-items-center mb-4">
-                    <h3 class="font-orbitron mb-0"><i class="fa-solid fa-folder-open me-2 text-warning"></i>CANDIDATURES REÇUES</h3>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-outline-warning btn-sm font-orbitron" onclick="sendUrgentAlert()">
-                            <i class="fa-solid fa-triangle-exclamation me-1"></i> Candidature importante
-                        </button>
-                        <button class="btn btn-outline-danger btn-sm font-orbitron" onclick="clearAllCandidatures()"><i class="fa-solid fa-trash me-1"></i> Vider la liste</button>
-                    </div>
-                </div>
-                
-                <div id="candidaturesList" class="row"></div>
-
-                <div id="ticketSection" style="display: none;" class="ticket-box">
-                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom border-secondary pb-2">
-                        <h5 class="font-orbitron mb-0 text-info"><i class="fa-solid fa-ticket me-2"></i>TICKET DE : <span id="ticketCandidateName" class="text-white text-uppercase"></span></h5>
-                        <button class="btn btn-outline-secondary btn-sm font-orbitron" onclick="closeTicketView()"><i class="fa-solid fa-arrow-left me-1"></i> Retour aux candidatures</button>
-                    </div>
-                    <div id="ticketMessagesContainer" class="ticket-messages"></div>
-                    <div class="input-group">
-                        <input type="text" id="staffTicketInput" class="form-control bg-dark text-white border-secondary" placeholder="Écris ton message dans le ticket..." onkeypress="handleTicketKey(event)">
-                        <button class="btn btn-info font-orbitron text-dark fw-bold px-4" style="background: var(--secondary-neon); border: none;" onclick="sendTicketMessage()"><i class="fa-solid fa-paper-plane me-1"></i> Envoyer</button>
-                    </div>
-                </div>
+        <div class="container-box" id="candidaturesListContainer">
             </div>
-
-            <div id="section-annuaire" style="display: none;">
-                <h3 class="font-orbitron mb-4"><i class="fa-solid fa-database me-2 text-info"></i>JOUEURS</h3>
-                <div id="playersList" class="row"></div>
-            </div>
-
-            <div id="section-membres" style="display: none;">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h3 class="font-orbitron mb-0"><i class="fa-solid fa-users-gear me-2 text-success"></i>GESTION DES MEMBRES DISCORD</h3>
-                    <button class="btn btn-outline-info btn-sm font-orbitron" onclick="addNewDiscordMember()"><i class="fa-solid fa-user-plus me-1"></i> Ajouter un membre</button>
-                </div>
-                <div class="mb-4">
-                    <input type="text" id="searchDiscordMember" class="form-control bg-dark text-white border-secondary" placeholder="Rechercher un membre par son pseudo Discord..." onkeyup="filterDiscordMembers()">
-                </div>
-                <div id="discordMembersList" class="row"></div>
-            </div>
-        </div>
     </div>
 
     <footer>
-        <p class="mb-0">&copy; 2026 ASPEN RP — TOUS DROITS RÉSERVÉS</p>
+        <p>&copy; 2026 ASPEN RP — TOUS DROITS RÉSERVÉS</p>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-        let activeTicketIndex = null;
-
+    <script>
         document.addEventListener('DOMContentLoaded', () => {
-            renderCandidatures();
-            renderPlayers();
-            renderDiscordMembers();
-
-            // --- ACTUALISATION EN TEMPS RÉEL SANS RELOAD ---
-            setInterval(() => {
-                // Met à jour les listes de candidatures/joueurs en arrière-plan
-                renderCandidatures();
-                renderPlayers();
-
-                // Si un ticket est ouvert, actualise ses messages automatiquement
-                if (activeTicketIndex !== null) {
-                    renderTicketMessages();
-                }
-            }, 1000); // S'actualise toutes les 1 seconde (1000 ms)
+            loadCandidatures();
         });
 
-        function switchTab(tab) {
-            document.getElementById('tab-recrutement').classList.toggle('active', tab === 'recrutement');
-            document.getElementById('tab-annuaire').classList.toggle('active', tab === 'annuaire');
-            document.getElementById('tab-membres').classList.toggle('active', tab === 'membres');
-
-            document.getElementById('section-recrutement').style.display = tab === 'recrutement' ? 'block' : 'none';
-            document.getElementById('section-annuaire').style.display = tab === 'annuaire' ? 'block' : 'none';
-            document.getElementById('section-membres').style.display = tab === 'membres' ? 'block' : 'none';
-        }
-
-        async function sendUrgentAlert() {
-            if (!confirm("Voulez-vous envoyer une alerte urgente sur votre Discord ?")) return;
-
-            try {
-                let response = await fetch('/api/urgent-alert', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                let data = await response.json();
-
-                if (response.ok) {
-                    alert("Alerte envoyée avec succès par votre bot ! Vérifiez vos messages privés Discord.");
-                } else {
-                    alert("Erreur : " + (data.error || "Impossible d'envoyer l'alerte"));
-                }
-            } catch (err) {
-                console.error(err);
-                alert("Erreur de connexion avec le serveur Node.js.");
-            }
-        }
-
-        function renderCandidatures() {
-            const container = document.getElementById('candidaturesList');
+        function loadCandidatures() {
+            const container = document.getElementById('candidaturesListContainer');
             let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
 
-            // Évite de réinitialiser le HTML si l'utilisateur est dans un ticket ou si la structure change brusquement
-            if (activeTicketIndex !== null) return;
-
             if (list.length === 0) {
-                container.innerHTML = `<div class="col-12 text-center text-muted my-5"><h5>Aucune candidature n'a été soumise pour le moment.</h5></div>`;
+                container.innerHTML = `<p class="text-center text-muted my-4">Aucune candidature n'a été soumise pour le moment.</p>`;
                 return;
             }
 
-            // Génération dynamique des cartes de candidatures
-            let htmlContent = '';
-            list.forEach((item, index) => {
-                let msgsHtml = '';
-                if(item.messages && item.messages.length > 0) {
-                    item.messages.forEach(m => {
-                        let color = m.sender === 'Staff' ? '#f72585' : '#00f5d4';
-                        msgsHtml += `<div class="text-muted mb-1" style="font-size: 0.85rem;">• <strong style="color: ${color};">${m.sender}</strong> : ${escapeHtml(m.text)}</div>`;
-                    });
-                } else {
-                    msgsHtml = `<span class="text-muted" style="font-size: 0.85rem;">Aucun message.</span>`;
-                }
-
-                htmlContent += `
-                    <div class="col-md-6">
-                        <div class="cand-card">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h5 class="font-orbitron mb-0"><i class="fa-brands fa-discord me-2 text-primary"></i>${escapeHtml(item.discord)}</h5>
-                                <span class="status-badge status-${(item.status || 'En-attente').replace(' ', '-')}">${item.status || 'En attente'}</span>
-                            </div>
-                            <p class="mb-1"><strong>Poste :</strong> ${escapeHtml(item.poste)}</p>
-                            <p class="mb-3"><strong>Motivations :</strong> ${escapeHtml(item.motivations)}</p>
-                            <div class="p-2 rounded mb-3" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">
-                                <small class="text-info d-block mb-1 font-orbitron" style="font-size: 0.75rem;">Discussion :</small>
-                                <div>${msgsHtml}</div>
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-success btn-sm flex-fill" onclick="updateStatus(${index}, 'Accepté')">Accepter</button>
-                                <button class="btn btn-danger btn-sm flex-fill" onclick="updateStatus(${index}, 'Refusé')">Refuser</button>
-                                <button class="btn btn-outline-info btn-sm flex-fill font-orbitron" onclick="openTicket(${index})"><i class="fa-solid fa-envelope me-1"></i> Message</button>
-                            </div>
+            let html = '';
+            list.forEach((c, index) => {
+                html += `
+                    <div class="candidate-card">
+                        <div>
+                            <h5 style="color: var(--accent-pink); margin-bottom: 5px;">${escapeHtml(c.discord)}</h5>
+                            <p class="mb-1"><strong>Poste :</strong> ${escapeHtml(c.poste)}</p>
+                            <p class="mb-0 text-muted" style="font-size: 0.9rem;"><strong>Motivations :</strong> ${escapeHtml(c.motivations)}</p>
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-primary" onclick="openTicket('${escapeHtml(c.discord)}')"><i class="fa-solid fa-comments"></i> Ouvrir le Ticket</button>
                         </div>
                     </div>
                 `;
             });
-            
-            // Empêche le scintillement en ne remplaçant le contenu que s'il est différent ou si nécessaire
-            if (container.innerHTML !== htmlContent) {
-                container.innerHTML = htmlContent;
-            }
+            container.innerHTML = html;
         }
 
-        function openTicket(index) {
-            activeTicketIndex = index;
+        function openTicket(discordName) {
             let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
-            const candidate = list[index];
+            let candidate = list.find(c => c.discord.toLowerCase() === discordName.toLowerCase());
+            if (!candidate) return;
 
-            document.getElementById('ticketCandidateName').innerText = candidate.discord;
-            document.getElementById('candidaturesHeaderContainer').style.display = 'none';
-            document.getElementById('candidaturesList').style.display = 'none';
-            document.getElementById('ticketSection').style.display = 'block';
-            renderTicketMessages();
-        }
-
-        function closeTicketView() {
-            activeTicketIndex = null;
-            document.getElementById('ticketSection').style.display = 'none';
-            document.getElementById('candidaturesHeaderContainer').style.display = 'flex';
-            document.getElementById('candidaturesList').style.display = 'flex';
-            renderCandidatures();
-        }
-
-        function renderTicketMessages() {
-            let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
-            if (activeTicketIndex === null || !list[activeTicketIndex]) return;
-
-            const candidate = list[activeTicketIndex];
-            const container = document.getElementById('ticketMessagesContainer');
-            
-            let messagesHtml = '';
-            if (!candidate.messages || candidate.messages.length === 0) {
-                messagesHtml = `<div class="text-center text-muted my-auto">Aucun message dans ce ticket pour l'instant. Commence la discussion ci-dessous !</div>`;
-            } else {
+            const container = document.getElementById('candidaturesListContainer');
+            let msgsHtml = '';
+            if (candidate.messages && candidate.messages.length > 0) {
                 candidate.messages.forEach(m => {
-                    const isStaff = m.sender === 'Staff';
-                    const bubbleClass = isStaff ? 'staff' : 'user';
-                    messagesHtml += `
-                        <div class="msg-bubble ${bubbleClass}">
-                            <div style="font-size: 0.75rem; opacity: 0.8; margin-bottom: 2px;"><strong>${escapeHtml(m.sender)}</strong> • ${m.date || ''}</div>
-                            <div>${escapeHtml(m.text)}</div>
-                        </div>
-                    `;
+                    msgsHtml += `<div style="margin: 8px 0;"><strong>${escapeHtml(m.sender)}</strong> : ${escapeHtml(m.text)}</div>`;
                 });
+            } else {
+                msgsHtml = `Aucun message pour l'instant.`;
             }
 
-            if (container.innerHTML !== messagesHtml) {
-                container.innerHTML = messagesHtml;
-                container.scrollTop = container.scrollHeight;
-            }
+            container.innerHTML = `
+                <button class="btn btn-sm btn-secondary mb-3" onclick="loadCandidatures()"><i class="fa-solid fa-arrow-left"></i> Retour aux candidatures</button>
+                <h4 class="mb-3">TICKET DE : ${escapeHtml(candidate.discord)}</h4>
+                <div style="background: #0b090a; padding: 15px; border-radius: 8px; height: 250px; overflow-y: auto; margin-bottom: 15px;" id="ticketMessagesBox">
+                    ${msgsHtml}
+                </div>
+                <div class="input-group">
+                    <input type="text" id="staffReplyInput" class="form-control" placeholder="Écris ta réponse au candidat..." onkeypress="handleStaffKey(event, '${escapeHtml(candidate.discord)}')">
+                    <button class="btn btn-success" onclick="sendStaffMessage('${escapeHtml(candidate.discord)}')"><i class="fa-solid fa-paper-plane"></i> Envoyer</button>
+                </div>
+            `;
         }
 
-        function handleTicketKey(e) {
-            if (e.key === 'Enter') sendTicketMessage();
+        function handleStaffKey(e, discordName) {
+            if (e.key === 'Enter') sendStaffMessage(discordName);
         }
 
-        function sendTicketMessage() {
-            const input = document.getElementById('staffTicketInput');
+        function sendStaffMessage(discordName) {
+            const input = document.getElementById('staffReplyInput');
             const text = input.value.trim();
-            if (!text || activeTicketIndex === null) return;
+            if (!text) return;
 
             let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
-            if (!list[activeTicketIndex].messages) list[activeTicketIndex].messages = [];
-
-            const now = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            list[activeTicketIndex].messages.push({
-                sender: 'Staff',
-                date: now,
-                text: text
-            });
-
-            localStorage.setItem('aspen_candidatures', JSON.stringify(list));
-            input.value = '';
-            renderTicketMessages();
-        }
-
-        function updateStatus(index, newStatus) {
-            let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
-            list[index].status = newStatus;
-            localStorage.setItem('aspen_candidatures', JSON.stringify(list));
-            renderCandidatures();
-            renderPlayers();
-        }
-
-        function clearAllCandidatures() {
-            if(confirm("Voulez-vous vraiment tout supprimer ?")) {
-                localStorage.removeItem('aspen_candidatures');
-                closeTicketView();
-                renderCandidatures();
-                renderPlayers();
-            }
-        }
-
-        function renderPlayers() {
-            const container = document.getElementById('playersList');
-            let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
-
-            if (list.length === 0) {
-                container.innerHTML = `<div class="col-12 text-center text-muted my-5"><h5>Aucun joueur enregistré.</h5></div>`;
-                return;
-            }
-
-            let htmlContent = '';
-            list.forEach((item) => {
-                htmlContent += `
-                    <div class="col-md-4">
-                        <div class="cand-card">
-                            <h5 class="font-orbitron text-info mb-2"><i class="fa-brands fa-discord me-2"></i>${escapeHtml(item.discord)}</h5>
-                            <p class="mb-1 text-muted">Poste visé : ${escapeHtml(item.poste)}</p>
-                            <span class="status-badge status-${(item.status || 'En-attente').replace(' ', '-')}">${item.status || 'En attente'}</span>
-                        </div>
-                    </div>
-                `;
-            });
-
-            if (container.innerHTML !== htmlContent) {
-                container.innerHTML = htmlContent;
-            }
-        }
-
-        async function renderDiscordMembers() {
-            const container = document.getElementById('discordMembersList');
-            container.innerHTML = `<div class="col-12 text-center text-muted my-5"><h5>Chargement des membres du serveur Discord...</h5></div>`;
-            
-            try {
-                let response = await fetch('/api/citoyens');
-                if (!response.ok) throw new Error("Erreur réseau");
-                let members = await response.json();
-
-                if (!Array.isArray(members) || members.length === 0) {
-                    container.innerHTML = `<div class="col-12 text-center text-muted my-5"><h5>Aucun membre trouvé sur le serveur.</h5></div>`;
-                    return;
-                }
-
-                container.innerHTML = '';
-                members.forEach((member) => {
-                    let memberName = member.name || 'Inconnu';
-                    let memberId = member.id || memberName;
-                    let firstLetter = memberName.charAt(0).toUpperCase();
-                    let rolesHtml = (member.roles && member.roles.length > 0) 
-                        ? member.roles.map(r => `<span class="role-badge">${escapeHtml(r)}</span>`).join('') 
-                        : `<span class="text-muted" style="font-size: 0.75rem;">Aucun rôle</span>`;
-
-                    const card = document.createElement('div');
-                    card.className = 'col-md-4 member-card-wrapper mb-3';
-                    card.setAttribute('data-name', memberName.toLowerCase());
-                    card.innerHTML = `
-                        <div class="cand-card">
-                            <div class="d-flex align-items-center gap-3 mb-2">
-                                <div class="member-avatar">${firstLetter}</div>
-                                <div>
-                                    <h5 class="font-orbitron text-info mb-0">${escapeHtml(memberName)}</h5>
-                                    <small class="text-muted"><span class="text-success">●</span> En ligne</small>
-                                </div>
-                            </div>
-                            <div class="roles-container">${rolesHtml}</div>
-                            <div class="member-actions">
-                                <button class="btn-action btn-promote" onclick="memberAction('promote', '${escapeHtml(memberId)}')"><i class="fa-solid fa-arrow-up"></i> Promouvoir</button>
-                                <button class="btn-action btn-mute" onclick="memberAction('mute', '${escapeHtml(memberId)}')"><i class="fa-solid fa-microphone-slash"></i> Mute</button>
-                                <button class="btn-action btn-kick" onclick="memberAction('kick', '${escapeHtml(memberId)}')"><i class="fa-solid fa-user-slash"></i> Expulser</button>
-                                <button class="btn-action btn-ban" onclick="memberAction('ban', '${escapeHtml(memberId)}')"><i class="fa-solid fa-ban"></i> Ban</button>
-                                <button class="btn-action btn-add-role" onclick="memberAction('add-role', '${escapeHtml(memberId)}')"><i class="fa-solid fa-plus"></i> Ajouter un rôle</button>
-                            </div>
-                        </div>
-                    `;
-                    container.appendChild(card);
+            let candidate = list.find(c => c.discord.toLowerCase() === discordName.toLowerCase());
+            if (candidate) {
+                if (!candidate.messages) candidate.messages = [];
+                candidate.messages.cz = true; // helper
+                candidate.messages.push({
+                    sender: 'Staff',
+                    text: text,
+                    date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                 });
-            } catch (error) {
-                console.error("Erreur :", error);
-                container.innerHTML = `<div class="col-12 text-center text-danger my-5"><h5>Impossible de charger les membres du bot. Vérifie que ton serveur Node.js est bien démarré.</h5></div>`;
+                localStorage.setItem('aspen_candidatures', JSON.stringify(list));
+                openTicket(discordName); // Recharge le ticket actualisé
             }
         }
 
-        function memberAction(actionType, memberId) {
-            switch(actionType) {
-                case 'promote':
-                    if(confirm("Voulez-vous promouvoir ce membre ?")) alert("Action 'Promouvoir' envoyée pour : " + memberId);
-                    break;
-                case 'mute':
-                    if(confirm("Voulez-vous rendre muet (mute) ce membre ?")) alert("Action 'Mute' envoyée pour : " + memberId);
-                    break;
-                case 'kick':
-                    if(confirm("Êtes-vous sûr de vouloir expulser ce membre ?")) alert("Action 'Expulser' envoyée pour : " + memberId);
-                    break;
-                case 'ban':
-                    if(confirm("ATTENTION : Voulez-vous bannir ce membre ?")) alert("Action 'Ban' envoyée pour : " + memberId);
-                    break;
-                case 'add-role':
-                    let roleName = prompt("Entrez le nom du rôle à ajouter :");
-                    if(roleName) alert("Ajout du rôle '" + roleName + "' pour : " + memberId);
-                    break;
+        function clearList() {
+            if (confirm("Veux-tu vraiment vider toutes les candidatures ?")) {
+                localStorage.removeItem('aspen_candidatures');
+                loadCandidatures();
             }
-        }
-
-        function filterDiscordMembers() {
-            let input = document.getElementById('searchDiscordMember').value.toLowerCase();
-            let cards = document.getElementsByClassName('member-card-wrapper');
-            for (let i = 0; i < cards.length; i++) {
-                let name = cards[i].getAttribute('data-name');
-                cards[i].style.display = name && name.includes(input) ? 'block' : 'none';
-            }
-        }
-
-        function addNewDiscordMember() {
-            alert("Pour ajouter un nouveau membre, invite-le directement sur ton serveur Discord !");
         }
 
         function escapeHtml(text) {
