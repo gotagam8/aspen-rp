@@ -93,17 +93,22 @@
                     <i class="fa-solid fa-magnifying-glass"></i>
                     <div>
                         <h6 class="font-orbitron mb-0 text-white">SUIVI DE CANDIDATURE</h6>
-                        <small class="text-muted" style="font-size: 0.75rem;">Vérifie l'état de ton dossier</small>
+                        <small class="text-muted" style="font-size: 0.75rem;">Discussion en direct avec le staff</small>
                     </div>
                 </div>
                 
                 <div class="chat-messages" id="suiviMessages">
-                    <div class="message bot">Entre ton <strong>Pseudo Discord</strong> exact pour consulter l'état de ta candidature et voir les messages du staff :</div>
+                    <div class="message bot">Entre ton <strong>Pseudo Discord</strong> pour voir ta candidature et tes messages :</div>
                 </div>
 
-                <div class="chat-input-area">
-                    <input type="text" id="suiviInput" placeholder="Ex: Pseudo#0000 ou Pseudo..." onkeypress="handleSuiviKeyPress(event)">
+                <div class="chat-input-area" id="suiviInputArea">
+                    <input type="text" id="suiviInput" placeholder="Ton pseudo Discord..." onkeypress="handleSuiviKeyPress(event)">
                     <button class="btn btn-send" onclick="checkCandidatureStatus()"><i class="fa-solid fa-search"></i></button>
+                </div>
+
+                <div class="chat-input-area" id="userTicketArea" style="display: none;">
+                    <input type="text" id="userMessageInput" placeholder="Écris un message au staff..." onkeypress="handleUserTicketKey(event)">
+                    <button class="btn btn-send" onclick="sendUserMessageToTicket()"><i class="fa-solid fa-paper-plane"></i></button>
                 </div>
             </div>
         </div>
@@ -117,6 +122,7 @@
     <script>
         let step = 0;
         let candData = { discord: '', poste: '', motivations: '', status: 'En attente', messages: [] };
+        let currentCandIndex = null;
 
         const questions = [
             "Bonjour ! Quel est ton **Pseudo Discord** ?",
@@ -126,6 +132,21 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             botSay(questions[0]);
+
+            // Si un pseudo est déjà mémorisé, on le charge automatiquement dans le suivi
+            const savedPseudo = localStorage.getItem('aspen_user_pseudo');
+            if (savedPseudo) {
+                document.getElementById('suiviInput').value = savedPseudo;
+                checkCandidatureStatus(true);
+            }
+
+            // Rafraîchissement automatique de la discussion toutes les 3 secondes sans clignoter
+            setInterval(() => {
+                const saved = localStorage.getItem('aspen_user_pseudo');
+                if (saved && document.getElementById('suiviContainer').style.display === 'block') {
+                    checkCandidatureStatus(true);
+                }
+            }, 3000);
         });
 
         function switchMode(mode) {
@@ -172,72 +193,127 @@
                 candData.motivations = text;
                 step++;
                 
-                // Envoi de la candidature au serveur Node.js
                 await saveCandidatureToServer(candData);
 
+                // Mémorise automatiquement le pseudo pour le suivi futur
+                localStorage.setItem('aspen_user_pseudo', candData.discord);
+
                 setTimeout(() => {
-                    botSay("🎉 **Candidature envoyée avec succès !** Notre équipe va l'étudier. Tu peux suivre son avancement en cliquant sur l'onglet 'Suivre ma candidature'.");
+                    botSay("🎉 **Candidature envoyée avec succès !** Bascule sur l'onglet 'Suivre ma candidature' pour échanger avec le staff.");
                 }, 500);
             }
         }
 
         async function saveCandidatureToServer(data) {
             try {
-                await fetch('/api/candidatures', {
+                let res = await fetch('/api/candidatures', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
+                // Récupération de l'index réel après création
+                let list = await (await fetch('/api/candidatures')).json();
+                currentCandIndex = list.findIndex(c => c.discord.toLowerCase() === data.discord.toLowerCase());
             } catch (err) {
                 console.error("Erreur d'envoi de la candidature :", err);
             }
         }
 
-        // --- PARTIE SUIVI DE CANDIDATURE ---
+        // --- SUIVI DE CANDIDATURE ET DISCUSSION FLUIDE ---
         function handleSuiviKeyPress(e) {
             if (e.key === 'Enter') checkCandidatureStatus();
         }
 
-        async function checkCandidatureStatus() {
+        async function checkCandidatureStatus(silent = false) {
             const input = document.getElementById('suiviInput');
-            const query = input.value.trim().toLowerCase();
+            const query = (input.value || localStorage.getItem('aspen_user_pseudo') || '').trim().toLowerCase();
             if (!query) return;
 
+            localStorage.setItem('aspen_user_pseudo', query);
+
             const container = document.getElementById('suiviMessages');
-            container.innerHTML += `<div class="message user">${escapeHtml(query)}</div>`;
-            input.value = '';
+            if (!silent) {
+                container.innerHTML = `<div class="message user">${escapeHtml(query)}</div>`;
+            }
 
             try {
                 let response = await fetch('/api/candidatures');
                 let list = await response.json();
-                let found = list.find(c => c.discord.toLowerCase().includes(query));
+                let index = list.findIndex(c => c.discord.toLowerCase() === query);
 
-                setTimeout(() => {
-                    if (!found) {
-                        container.innerHTML += `<div class="message bot">❌ Aucune candidature trouvée pour ce pseudo Discord. Assure-toi de l'avoir écrit correctement.</div>`;
-                    } else {
-                        let statusColor = found.status === 'Accepté' ? '#38b000' : (found.status === 'Refusé' ? '#d90429' : '#ffbe0b');
-                        let html = `<div class="message bot">
-                            <strong>📊 Statut de ton dossier :</strong><br>
-                            • Poste : ${escapeHtml(found.poste)}<br>
-                            • État : <span style="color: ${statusColor}; font-weight: bold;">${found.status || 'En attente'}</span>
-                        `;
-
-                        if (found.messages && found.messages.length > 0) {
-                            html += `<div class="mt-2 pt-2 border-top border-secondary"><strong>Messages du Staff :</strong><br>`;
-                            found.messages.forEach(m => {
-                                let senderColor = m.sender === 'Staff' ? '#f72585' : '#00f5d4';
-                                html += `<small style="display: block; margin-top: 4px;">• <strong style="color: ${senderColor};">${m.sender}</strong> (${m.date || ''}) : ${escapeHtml(m.text)}</small>`;
-                            });
-                            html += `</div>`;
-                        }
-                        html += `</div>`;
-                        container.innerHTML += html;
+                if (index === -1) {
+                    if (!silent) {
+                        container.innerHTML += `<div class="message bot">❌ Aucune candidature trouvée pour ce pseudo Discord.</div>`;
                     }
-                    container.scrollTop = container.scrollHeight;
-                }, 400);
+                    return;
+                }
+
+                currentCandIndex = index;
+                let found = list[index];
+                let statusColor = found.status === 'Accepté' ? '#38b000' : (found.status === 'Refusé' ? '#d90429' : '#ffbe0b');
+
+                let html = `<div class="message bot">
+                    <strong>📊 Statut : <span style="color: ${statusColor};">${found.status || 'En attente'}</span></strong><br>
+                    • Poste : ${escapeHtml(found.poste)}
+                </div>`;
+
+                if (found.messages && found.messages.length > 0) {
+                    found.messages.forEach(m => {
+                        let isStaff = m.sender === 'Staff';
+                        html += `<div class="message ${isStaff ? 'bot' : 'user'}" style="width: 100%; margin: 5px 0;">
+                            <small style="opacity: 0.7; display: block;"><strong>${escapeHtml(m.sender)}</strong> (${m.date || ''})</small>
+                            <div>${escapeHtml(m.text)}</div>
+                        </div>`;
+                    });
+                } else {
+                    html += `<div class="message bot">Aucun message pour l'instant.</div>`;
+                }
+
+                container.innerHTML = html;
+                container.scrollTop = container.scrollHeight;
+
+                // Affiche la zone pour que l'utilisateur puisse répondre directement
+                document.getElementById('userTicketArea').style.display = 'flex';
+                document.getElementById('suiviInputArea').style.display = 'none';
+
             } catch (err) {
                 console.error("Erreur de suivi :", err);
+            }
+        }
+
+        function handleUserTicketKey(e) {
+            if (e.key === 'Enter') sendUserMessageToTicket();
+        }
+
+        async function sendUserMessageToTicket() {
+            const input = document.getElementById('userMessageInput');
+            const text = input.value.trim();
+            if (!text || currentCandIndex === null) return;
+
+            try {
+                let response = await fetch('/api/candidatures');
+                let list = await response.json();
+                let candidate = list[currentCandIndex];
+
+                if (!candidate.messages) candidate.messages = [];
+
+                const now = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                candidate.messages.push({
+                    sender: candidate.discord,
+                    date: now,
+                    text: text
+                });
+
+                await fetch(`/api/candidatures/${currentCandIndex}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(candidate)
+                });
+
+                input.value = '';
+                checkCandidatureStatus(true);
+            } catch (err) {
+                console.error("Erreur d'envoi du message utilisateur :", err);
             }
         }
 
