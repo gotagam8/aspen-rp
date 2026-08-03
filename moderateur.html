@@ -98,7 +98,7 @@
             </ul>
 
             <div id="section-recrutement">
-                <div class="d-flex justify-content-between align-items-center mb-4">
+                <div id="candidaturesHeaderContainer" class="d-flex justify-content-between align-items-center mb-4">
                     <h3 class="font-orbitron mb-0"><i class="fa-solid fa-folder-open me-2 text-warning"></i>CANDIDATURES REÇUES</h3>
                     <div class="d-flex gap-2">
                         <button class="btn btn-outline-warning btn-sm font-orbitron" onclick="sendUrgentAlert()">
@@ -165,7 +165,6 @@
             document.getElementById('section-membres').style.display = tab === 'membres' ? 'block' : 'none';
         }
 
-        // --- FONCTION POUR ENVOYER L'ALERTE URGENTE AU BOT ---
         async function sendUrgentAlert() {
             if (!confirm("Voulez-vous envoyer une alerte urgente sur votre Discord ?")) return;
 
@@ -187,7 +186,6 @@
             }
         }
 
-        // --- GESTION RECRUTEMENT & TICKETS ---
         function renderCandidatures() {
             const container = document.getElementById('candidaturesList');
             let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
@@ -241,6 +239,7 @@
             const candidate = list[index];
 
             document.getElementById('ticketCandidateName').innerText = candidate.discord;
+            document.getElementById('candidaturesHeaderContainer').style.display = 'none';
             document.getElementById('candidaturesList').style.display = 'none';
             document.getElementById('ticketSection').style.display = 'block';
             renderTicketMessages();
@@ -249,6 +248,7 @@
         function closeTicketView() {
             activeTicketIndex = null;
             document.getElementById('ticketSection').style.display = 'none';
+            document.getElementById('candidaturesHeaderContainer').style.display = 'flex';
             document.getElementById('candidaturesList').style.display = 'flex';
             renderCandidatures();
         }
@@ -317,7 +317,6 @@
             }
         }
 
-        // --- GESTION SECTION JOUEURS ---
         function renderPlayers() {
             const container = document.getElementById('playersList');
             let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
@@ -342,7 +341,6 @@
             });
         }
 
-        // --- GESTION MEMBRES DISCORD ---
         async function renderDiscordMembers() {
             const container = document.getElementById('discordMembersList');
             container.innerHTML = `<div class="col-12 text-center text-muted my-5"><h5>Chargement des membres du serveur Discord...</h5></div>`;
