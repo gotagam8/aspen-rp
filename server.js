@@ -1,6 +1,4 @@
-const { Client, GatewayIntentBits } = require('discord.js');
 const express = require('express');
-const axios = require('axios');
 const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
@@ -16,50 +14,64 @@ const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GUILD_ID = '1431438811560153211';
 const ADMIN_DISCORD_ID = '1459971234422067392';
 
-// --- CONFIGURATION DU BOT DISCORD ---
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMembers, // Indispensable pour l'API des membres
-        GatewayIntentBits.GuildPresences
-    ]
-});
+// Import sécurisé de Discord.js pour éviter tout crash global
+let client = null;
+try {
+    const { Client, GatewayIntentBits } = require('discord.js');
+    client = new Client({
+        intents: [
+            GatewayIntentBits.Guilds,
+            GatewayIntentBits.GuildMembers,
+            GatewayIntentBits.GuildPresences
+        ]
+    });
 
-client.once('ready', () => {
-    console.log(`🤖 Bot Discord connecté en tant que ${client.user.tag}`);
-});
+    client.once('ready', () => {
+        console.log(`🤖 Bot Discord connecté en tant que ${client.user.tag}`);
+    });
 
-if (BOT_TOKEN) {
-    client.login(BOT_TOKEN).catch(err => console.error("Erreur de connexion du bot :", err.message));
-} else {
-    console.warn("⚠️ DISCORD_BOT_TOKEN manquant dans le fichier .env");
+    if (BOT_TOKEN) {
+        client.login(BOT_TOKEN).catch(err => console.error("⚠️ Erreur connexion bot :", err.message));
+    } else {
+        console.warn("⚠️ DISCORD_BOT_TOKEN manquant");
+    }
+} catch (e) {
+    console.warn("⚠️ Discord.js non chargé ou erreur d'initialisation :", e.message);
 }
 
-// --- GESTION DES CANDIDATURES (JSON Local sur le serveur) ---
+// --- GESTION DES CANDIDATURES (JSON Local) ---
 const DB_FILE = path.join(__dirname, 'candidatures.json');
 
 function getData() {
-    if (!fs.existsSync(DB_FILE)) {
-        fs.writeFileSync(DB_FILE, JSON.stringify([]));
+    try {
+        if (!fs.existsSync(DB_FILE)) {
+            fs.writeFileSync(DB_FILE, JSON.stringify([]));
+        }
+        const data = fs.readFileSync(DB_FILE, 'utf8');
+        return JSON.parse(data);
+    } catch (e) {
+        return [];
     }
-    return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
 }
 
 function saveData(data) {
-    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+    try {
+        fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+    } catch (e) {
+        console.error("Erreur écriture fichier JSON :", e.message);
+    }
 }
 
-// 1. Récupérer toutes les candidatures (Panel Staff)
+// Routes API Candidatures
 app.get('/api/candidatures', (req, res) => {
     res.json(getData());
 });
 
-// 2. Soumettre une nouvelle candidature (Chatbot)
 app.post('/api/candidatures', (req, res) => {
     let list = getData();
     const newCand = req.body;
     
-    let existingIndex = list.findIndex(c => c.discord.toLowerCase() === newCand.discord.toLowerCase());
+    let existingIndex = list.findIndex(c => c.discord && newCand.discord && c.discord.toLowerCase() === newCand.discord.toLowerCase());
     if (existingIndex !== -1) {
         list[existingIndex] = { ...list[existingIndex], ...newCand };
     } else {
@@ -72,11 +84,10 @@ app.post('/api/candidatures', (req, res) => {
     res.json({ success: true, candidature: newCand });
 });
 
-// 3. Envoyer un message dans la discussion
 app.post('/api/candidatures/message', (req, res) => {
     const { discord, sender, text } = req.body;
     let list = getData();
-    let index = list.findIndex(c => c.discord.toLowerCase() === discord.toLowerCase());
+    let index = list.findIndex(c => c.discord && discord && c.discord.toLowerCase() === discord.toLowerCase());
 
     if (index === -1) {
         return res.status(404).json({ error: "Candidature introuvable" });
@@ -87,21 +98,16 @@ app.post('/api/candidatures/message', (req, res) => {
     const now = new Date();
     const timeString = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
 
-    list[index].messages.push({
-        sender: sender,
-        text: text,
-        date: timeString
-    });
+    list[index].messages.push({ sender, text, date: timeString });
 
     saveData(list);
     res.json({ success: true, messages: list[index].messages });
 });
 
-// 4. Changer le statut (Accepter / Refuser)
 app.post('/api/candidatures/status', (req, res) => {
     const { discord, status } = req.body;
     let list = getData();
-    let index = list.findIndex(c => c.discord.toLowerCase() === discord.toLowerCase());
+    let index = list.findIndex(c => c.discord && discord && c.discord.toLowerCase() === discord.toLowerCase());
 
     if (index !== -1) {
         list[index].status = status;
@@ -111,22 +117,19 @@ app.post('/api/candidatures/status', (req, res) => {
     res.status(404).json({ error: "Candidature introuvable" });
 });
 
-// --- API POUR RÉCUPÉRER TOUS LES MEMBRES DU SERVEUR DISCORD ---
+// Route Citoyens Discord sécurisée
 app.get('/api/citoyens', async (req, res) => {
     try {
-        if (!client.isReady()) {
-            return res.status(500).json({ error: "Le bot Discord n'est pas encore prêt." });
+        if (!client || !client.isReady()) {
+            return res.json([]);
         }
 
-        const guild = await client.guilds.fetch(GUILD_ID);
+        const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
         if (!guild) {
-            return res.status(404).json({ error: "Le bot ne trouve pas le serveur Discord spécifié." });
+            return res.json([]);
         }
 
-        // Sécurité pour éviter le crash en cas de restriction d'intent
-        await guild.members.fetch().catch(err => {
-            console.warn("Avertissement fetch membres :", err.message);
-        });
+        await guild.members.fetch().catch(() => {});
 
         const result = guild.members.cache.map(member => ({
             id: member.id,
@@ -138,27 +141,25 @@ app.get('/api/citoyens', async (req, res) => {
 
         res.json(result);
     } catch (error) {
-        console.error("ERREUR API CITOYENS :", error);
-        res.status(500).json({ error: error.message });
+        res.json([]);
     }
 });
 
-// --- ROUTE : ALERTE URGENTE BOT ---
+// Route Alerte urgente
 app.post('/api/urgent-alert', async (req, res) => {
     try {
-        if (!client.isReady()) {
+        if (!client || !client.isReady()) {
             return res.status(500).json({ error: "Le bot n'est pas prêt." });
         }
 
-        const user = await client.users.fetch(ADMIN_DISCORD_ID);
+        const user = await client.users.fetch(ADMIN_DISCORD_ID).catch(() => null);
         if (user) {
             await user.send("🚨 **ALERTE STAFF** 🚨\nVas vite sur le panneau de modération il y a une candidature importante !");
-            res.json({ success: true });
+            res.res ? res.json({ success: true }) : res.json({ success: true });
         } else {
-            res.status(404).json({ error: "Administrateur introuvable par le bot." });
+            res.status(404).json({ error: "Admin introuvable." });
         }
     } catch (error) {
-        console.error("ERREUR URGENT ALERT:", error);
         res.status(500).json({ error: error.message });
     }
 });
