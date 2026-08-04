@@ -167,7 +167,7 @@
             }
         }
 
-       function processPostulation(val) {
+   function processPostulation(val) {
     if (applicationStep === 0) {
         candidateData.discord = val;
         applicationStep = 1;
@@ -176,28 +176,27 @@
     } else if (applicationStep === 1) {
         candidateData.poste = val;
         applicationStep = 2;
-        // Nouvelle question 1 : L'âge
         addMessage("Quel âge as-tu ?", 'bot');
 
     } else if (applicationStep === 2) {
-        candidateData.age = val; // Enregistre l'âge
+        candidateData.age = val;
         applicationStep = 3;
-        // Nouvelle question 2 : Disponibilités
         addMessage("Quelles sont tes disponibilités par semaine ?", 'bot');
 
     } else if (applicationStep === 3) {
-        candidateData.dispos = val; // Enregistre les dispos
+        candidateData.dispos = val;
         applicationStep = 4;
         addMessage("Très bien. Quelles sont tes motivations pour rejoindre le projet ASPEN ?", 'bot');
 
     } else if (applicationStep === 4) {
-        candidateData.motivations = val; // Enregistre les motivations
+        candidateData.motivations = val;
         applicationStep = 5;
+        // Pose la question pour le BDA / Vocal
+        addMessage("Très bien. Quelles sont tes disponibilités pour venir en BDA / Vocal ?", 'bot');
 
-        } else if (applicationStep === 6) {
-        candidateData.dispos = val; // Enregistre les dispos vocal discord
-        applicationStep = 6;
-        addMessage("Très bien. Quelles sont tes disponibilités pour venir EN BDA ?", 'bot');
+    } else if (applicationStep === 5) {
+        candidateData.disposVocal = val; // Enregistre les dispos vocal
+        applicationStep = 6; // Étape de fin
 
         // Enregistrement final dans le LocalStorage
         let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
@@ -207,6 +206,7 @@
             age: candidateData.age,
             dispos: candidateData.dispos,
             motivations: candidateData.motivations,
+            disposVocal: candidateData.disposVocal, // Ajout de la variable dans la sauvegarde
             status: 'En attente',
             messages: []
         });
