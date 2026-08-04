@@ -150,7 +150,37 @@
         let activeTicketIndex = null;
         let lastDataSnapshot = '';
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            // --- NOUVEAU : Vérification de sécurité du rôle Discord ---
+            let userPseudo = prompt("Entre ton pseudo Discord pour vérifier ton accès Staff :");
+
+            if (!userPseudo) {
+                window.location.href = "index.html";
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/check-role', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: userPseudo })
+                });
+                const data = await response.json();
+
+                if (!data.allowed) {
+                    alert("❌ Accès refusé : Tu dois posséder le rôle 'Équipe Aspen RP' sur le Discord.");
+                    window.location.href = "index.html";
+                    return;
+                }
+
+                alert(`✅ Bienvenue ${data.username} ! Accès autorisé.`);
+            } catch (e) {
+                alert("Erreur de connexion avec le serveur.");
+                window.location.href = "index.html";
+                return;
+            }
+
+            // --- REPRISE DU CHARGEMENT INITIAL ENCADRÉ ---
             renderCandidatures();
             renderPlayers();
             renderDiscordMembers();
