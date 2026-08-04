@@ -26,7 +26,7 @@ try {
         ]
     });
 
-    client.once('ready', () => {
+    client.once('clientReady', () => {
         console.log(`🤖 Bot Discord connecté en tant que ${client.user.tag}`);
     });
 
