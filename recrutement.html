@@ -167,33 +167,49 @@
             }
         }
 
-        function processPostulation(val) {
-            if (applicationStep === 0) {
-                candidateData.discord = val;
-                applicationStep = 1;
-                addMessage(`Parfait, ${val}. Quel poste souhaites-tu occuper dans le staff/serveur ?`, 'bot');
-            } else if (applicationStep === 1) {
-                candidateData.poste = val;
-                applicationStep = 2;
-                addMessage("Très bien. Quelles sont tes motivations pour rejoindre le projet ASPEN ?", 'bot');
-            } else if (applicationStep === 2) {
-                candidateData.motivations = val;
-                applicationStep = 3;
+       function processPostulation(val) {
+    if (applicationStep === 0) {
+        candidateData.discord = val;
+        applicationStep = 1;
+        addMessage(`Parfait, ${val}. Quel poste souhaites-tu occuper dans le staff/serveur ?`, 'bot');
 
-                // Enregistrement dans LocalStorage
-                let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
-                list.push({
-                    discord: candidateData.discord,
-                    poste: candidateData.poste,
-                    motivations: candidateData.motivations,
-                    status: 'En attente',
-                    messages: []
-                });
-                localStorage.setItem('aspen_candidatures', JSON.stringify(list));
+    } else if (applicationStep === 1) {
+        candidateData.poste = val;
+        applicationStep = 2;
+        // Nouvelle question 1 : L'âge
+        addMessage("Quel âge as-tu ?", 'bot');
 
-                addMessage("✅ Ta candidature a été envoyée avec succès au Staff ! Tu peux basculer sur l'onglet 'Suivre ma candidature' pour échanger avec eux.", 'bot');
-            }
-        }
+    } else if (applicationStep === 2) {
+        candidateData.age = val; // Enregistre l'âge
+        applicationStep = 3;
+        // Nouvelle question 2 : Disponibilités
+        addMessage("Quelles sont tes disponibilités par semaine ?", 'bot');
+
+    } else if (applicationStep === 3) {
+        candidateData.dispos = val; // Enregistre les dispos
+        applicationStep = 4;
+        addMessage("Très bien. Quelles sont tes motivations pour rejoindre le projet ASPEN ?", 'bot');
+
+    } else if (applicationStep === 4) {
+        candidateData.motivations = val; // Enregistre les motivations
+        applicationStep = 5;
+
+        // Enregistrement final dans le LocalStorage
+        let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
+        list.push({
+            discord: candidateData.discord,
+            poste: candidateData.poste,
+            age: candidateData.age,
+            dispos: candidateData.dispos,
+            motivations: candidateData.motivations,
+            status: 'En attente',
+            messages: []
+        });
+        localStorage.setItem('aspen_candidatures', JSON.stringify(list));
+
+        addMessage("✅ Ta candidature a été envoyée avec succès au Staff !", 'bot');
+    }
+}
 
         function processSuivi(val) {
             let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
