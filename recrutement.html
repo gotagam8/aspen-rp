@@ -98,43 +98,53 @@
         let currentMode = 'postuler';
         let applicationStep = 0;
         let candidateData = { discord: '', poste: '', motivations: '' };
-        let userPollingInterval = null; 
-        let userLastMessageCount = 0;
+        let liveCheckInterval = null; 
+        let lastMsgCount = 0;
 
         document.addEventListener('DOMContentLoaded', () => {
             switchMode('postuler');
+            
+            // Écouteur en direct sur le même navigateur
+            window.addEventListener('storage', () => {
+                if (currentMode === 'suivi' && candidateData.discord) {
+                    refreshSuiviMessages();
+                }
+            });
         });
 
-        function switchMode(mode) {
-            currentMode = mode;
-            applicationStep = 0;
-            candidateData = { discord: '', poste: '', motivations: '' };
-            userLastMessageCount = 0;
-
-            if (userPollingInterval) clearInterval(userPollingInterval); 
-
-            document.getElementById('btnModePostuler').classList.toggle('active', mode === 'postuler');
-            document.getElementById('btnModeSuivi').classList.toggle('active', mode === 'suivi');
-            
-            const chatBox = document.getElementById('chatBox');
-            chatBox.innerHTML = ''; 
-
-            if (mode === 'postuler') {
-                addBotMessage("Salut ! Je suis l'IA de recrutement d'ASPEN RP. Pour commencer, quel est ton pseudo Discord ? (ex: pseudo#1234)");
-            } else {
-                addBotMessage("Salut ! Tu souhaites suivre ta candidature et discuter avec le staff ? Quel est le pseudo Discord que tu as utilisé pour postuler ?");
+        function stopAutoCheck() {
+            if (liveCheckInterval) {
+                clearInterval(liveCheckInterval);
+                liveCheckInterval = null;
             }
         }
 
-        function addBotMessage(text) {
+        function switchMode(mode) {
+            stopAutoCheck();
+            currentMode = mode;
+            applicationStep = 0;
+            candidateData = { discord: '', poste: '', motivations: '' };
+            lastMsgCount = 0;
+
+            document.getElementById('btnModePostuler').classList.toggle('active', mode === 'postuler');
+            document.getElementById('btnModeSuivi').classList.toggle('active', mode === 'suivi');
+
             const chatBox = document.getElementById('chatBox');
-            chatBox.innerHTML += `<div class="message bot">${text}</div>`;
-            chatBox.scrollTop = chatBox.scrollHeight;
+            chatBox.innerHTML = '';
+
+            if (mode === 'postuler') {
+                addMessage("Bonjour ! Je suis l'assistant de recrutement ASPEN. Quel est ton pseudo Discord ?", 'bot');
+            } else {
+                addMessage("Bonjour ! Entre ton pseudo Discord pour consulter l'état et la discussion de ta candidature.", 'bot');
+            }
         }
 
-        function addUserMessage(text) {
+        function addMessage(text, sender) {
             const chatBox = document.getElementById('chatBox');
-            chatBox.innerHTML += `<div class="message user">${text}</div>`;
+            const msg = document.createElement('div');
+            msg.className = `message ${sender}`;
+            msg.innerText = text;
+            chatBox.appendChild(msg);
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
@@ -142,103 +152,110 @@
             if (e.key === 'Enter') sendMessage();
         }
 
-        async function sendMessage() {
+        function sendMessage() {
             const input = document.getElementById('userInput');
-            const text = input.value.trim();
-            if (!text) return;
+            const val = input.value.trim();
+            if (!val) return;
 
-            addUserMessage(text);
+            addMessage(val, 'user');
             input.value = '';
-            input.disabled = true;
 
-            setTimeout(() => {
-                if (currentMode === 'postuler') handlePostulerStep(text);
-                else handleSuiviStep(text);
-                
-                input.disabled = false;
-                input.focus();
-            }, 300); 
-        }
-
-        async function handlePostulerStep(text) {
-            if (applicationStep === 0) {
-                candidateData.discord = text;
-                applicationStep++;
-                addBotMessage(`Enchanté <strong>${escapeHtml(text)}</strong> ! Quel poste souhaites-tu occuper sur notre serveur ?`);
-            } else if (applicationStep === 1) {
-                candidateData.poste = text;
-                applicationStep++;
-                addBotMessage(`C'est noté pour le poste de <strong>${escapeHtml(text)}</strong>. Enfin, explique-moi quelles sont tes motivations ?`);
-            } else if (applicationStep === 2) {
-                candidateData.motivations = text;
-                applicationStep++;
-                addBotMessage("Traitement de ta candidature en cours... <i class='fa-solid fa-spinner fa-spin ms-2'></i>");
-                try {
-                    let response = await fetch('/api/candidatures', {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(candidateData)
-                    });
-                    if(response.ok) addBotMessage("✅ <strong>Candidature envoyée !</strong> Le staff l'examinera au plus vite.");
-                    else addBotMessage("❌ Erreur serveur.");
-                } catch (e) { addBotMessage("⚠️ Erreur de connexion au backend."); }
-            }
-        }
-
-        async function handleSuiviStep(text) {
-            if (applicationStep === 0) {
-                candidateData.discord = text;
-                applicationStep++;
-                addBotMessage(`Je cherche le dossier de <strong>${escapeHtml(text)}</strong>...`);
-                
-                try {
-                    let response = await fetch('/api/candidatures');
-                    let list = await response.json();
-                    let candidate = list.find(c => c.discord.toLowerCase() === text.toLowerCase());
-
-                    if (candidate) {
-                        let badgeColor = candidate.status === 'Accepté' ? '#38b000' : (candidate.status === 'Refusé' ? '#d90429' : '#ffbe0b');
-                        addBotMessage(`Statut de ta candidature : <strong style="color: ${badgeColor};">${candidate.status || 'En attente'}</strong>.<br><br>Tu es maintenant en direct avec le staff. Pose tes questions ici !`);
-                        
-                        if (candidate.messages) userLastMessageCount = candidate.messages.length;
-
-                        if (userPollingInterval) clearInterval(userPollingInterval);
-                        userPollingInterval = setInterval(() => checkNewMessagesForUser(candidateData.discord), 2500);
-
-                    } else {
-                        addBotMessage(`Désolé, aucune candidature trouvée pour <strong>${escapeHtml(text)}</strong>. Réessaie !`);
-                        applicationStep = 0; 
-                    }
-                } catch (e) { addBotMessage("⚠️ Serveur inaccessible."); }
+            if (currentMode === 'postuler') {
+                processPostulation(val);
             } else {
-                userLastMessageCount++; 
-                try {
-                    await fetch('/api/candidatures/message', {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ discord: candidateData.discord, sender: candidateData.discord, text: text })
-                    });
-                } catch(e) { addBotMessage("Erreur réseau."); }
+                processSuivi(val);
             }
         }
 
-        async function checkNewMessagesForUser(discordPseudo) {
-            if (!discordPseudo) return;
-            try {
-                let response = await fetch('/api/candidatures');
-                let list = await response.json();
-                let candidate = list.find(c => c.discord.toLowerCase() === discordPseudo.toLowerCase());
+        function processPostulation(val) {
+            if (applicationStep === 0) {
+                candidateData.discord = val;
+                applicationStep = 1;
+                addMessage(`Parfait, ${val}. Quel poste souhaites-tu occuper dans le staff/serveur ?`, 'bot');
+            } else if (applicationStep === 1) {
+                candidateData.poste = val;
+                applicationStep = 2;
+                addMessage("Très bien. Quelles sont tes motivations pour rejoindre le projet ASPEN ?", 'bot');
+            } else if (applicationStep === 2) {
+                candidateData.motivations = val;
+                applicationStep = 3;
 
-                if (candidate && candidate.messages && candidate.messages.length > userLastMessageCount) {
-                    for (let i = userLastMessageCount; i < candidate.messages.length; i++) {
-                        let newMsg = candidate.messages[i];
-                        if (newMsg.sender === 'Staff') {
-                            addBotMessage(`<strong>STAFF :</strong> ${escapeHtml(newMsg.text)}`);
-                        }
-                    }
-                    userLastMessageCount = candidate.messages.length;
-                }
-            } catch (e) {}
+                // Enregistrement dans LocalStorage
+                let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
+                list.push({
+                    discord: candidateData.discord,
+                    poste: candidateData.poste,
+                    motivations: candidateData.motivations,
+                    status: 'En attente',
+                    messages: []
+                });
+                localStorage.setItem('aspen_candidatures', JSON.stringify(list));
+
+                addMessage("✅ Ta candidature a été envoyée avec succès au Staff ! Tu peux basculer sur l'onglet 'Suivre ma candidature' pour échanger avec eux.", 'bot');
+            }
         }
 
-        function escapeHtml(text) { return text ? text.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : ''; }
+        function processSuivi(val) {
+            let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
+
+            // Si le pseudo n'est pas encore sélectionné
+            if (!candidateData.discord) {
+                let index = list.findIndex(item => item.discord.toLowerCase() === val.toLowerCase());
+                if (index === -1) {
+                    addMessage("❌ Aucune candidature n'a été trouvée pour ce pseudo Discord. Vérifie l'orthographe.", 'bot');
+                } else {
+                    candidateData.discord = list[index].discord;
+                    document.getElementById('chatBox').innerHTML = ''; // Nettoie
+                    addMessage(`Bienvenue ${candidateData.discord}. Statut de ton dossier : [ ${list[index].status || 'En attente'} ]`, 'bot');
+
+                    refreshSuiviMessages();
+
+                    // Active la vérification automatique en arrière-plan
+                    stopAutoCheck();
+                    liveCheckInterval = setInterval(refreshSuiviMessages, 1000);
+                }
+            } else {
+                // Envoi d'un message au staff
+                let index = list.findIndex(item => item.discord.toLowerCase() === candidateData.discord.toLowerCase());
+                if (index !== -1) {
+                    if (!list[index].messages) list[index].messages = [];
+
+                    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    list[index].messages.push({
+                        sender: candidateData.discord,
+                        date: now,
+                        text: val
+                    });
+                    localStorage.setItem('aspen_candidatures', JSON.stringify(list));
+                    refreshSuiviMessages();
+                }
+            }
+        }
+
+        function refreshSuiviMessages() {
+            if (!candidateData.discord) return;
+
+            let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
+            let candidate = list.find(item => item.discord.toLowerCase() === candidateData.discord.toLowerCase());
+            if (!candidate) return;
+
+            const chatBox = document.getElementById('chatBox');
+            let msgs = candidate.messages || [];
+
+            // Met à jour l'affichage uniquement si de nouveaux messages sont détectés
+            if (msgs.length !== lastMsgCount) {
+                chatBox.innerHTML = '';
+                addMessage(`Statut actuel de ta candidature : [ ${candidate.status || 'En attente'} ]`, 'bot');
+
+                msgs.forEach(m => {
+                    const isUser = m.sender.toLowerCase() === candidateData.discord.toLowerCase();
+                    addMessage(`[${m.sender}] : ${m.text}`, isUser ? 'user' : 'bot');
+                });
+
+                lastMsgCount = msgs.length;
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+        }
     </script>
 </body>
 </html>
