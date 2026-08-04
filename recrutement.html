@@ -194,6 +194,11 @@
         candidateData.motivations = val; // Enregistre les motivations
         applicationStep = 5;
 
+        } else if (applicationStep === 6) {
+        candidateData.dispos = val; // Enregistre les dispos vocal discord
+        applicationStep = 6;
+        addMessage("Très bien. Quelles sont tes disponibilités pour venir EN BDA ?", 'bot');
+
         // Enregistrement final dans le LocalStorage
         let list = JSON.parse(localStorage.getItem('aspen_candidatures') || '[]');
         list.push({
