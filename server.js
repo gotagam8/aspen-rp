@@ -14,6 +14,9 @@ const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GUILD_ID = '1431438811560153211';
 const ADMIN_DISCORD_ID = '1459971234422067392';
 
+// 👑 ID du rôle requis pour la modération
+const STAFF_ROLE_ID = '1533512606973956188';
+
 // Import sécurisé de Discord.js pour éviter tout crash global
 let client = null;
 try {
@@ -61,6 +64,44 @@ function saveData(data) {
         console.error("Erreur écriture fichier JSON :", e.message);
     }
 }
+
+// --- ROUTE DE VÉRIFICATION DE RÔLE ---
+app.post('/api/check-role', async (req, res) => {
+    const { username } = req.body;
+
+    if (!username) {
+        return res.status(400).json({ allowed: false, error: "Pseudo Discord manquant" });
+    }
+
+    if (!client || !client.isReady()) {
+        return res.status(500).json({ allowed: false, error: "Bot Discord indisponible" });
+    }
+
+    try {
+        const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
+        if (!guild) return res.status(404).json({ allowed: false, error: "Serveur Discord non trouvé" });
+
+        await guild.members.fetch().catch(() => {});
+
+        // Recherche du membre par pseudo ou tag Discord
+        const member = guild.members.cache.find(m => 
+            m.user.username.toLowerCase() === username.toLowerCase() ||
+            m.user.tag.toLowerCase() === username.toLowerCase()
+        );
+
+        if (!member) {
+            return res.json({ allowed: false, error: "Membre non trouvé sur le Discord" });
+        }
+
+        // Vérification si le membre possède le rôle ID 1533512606973956188
+        const hasRole = member.roles.cache.has(STAFF_ROLE_ID);
+
+        return res.json({ allowed: hasRole, username: member.user.username });
+    } catch (err) {
+        console.error("Erreur check-role :", err);
+        return res.status(500).json({ allowed: false, error: "Erreur serveur" });
+    }
+});
 
 // Routes API Candidatures
 app.get('/api/candidatures', (req, res) => {
@@ -155,7 +196,7 @@ app.post('/api/urgent-alert', async (req, res) => {
         const user = await client.users.fetch(ADMIN_DISCORD_ID).catch(() => null);
         if (user) {
             await user.send("🚨 **ALERTE STAFF** 🚨\nVas vite sur le panneau de modération il y a une candidature importante !");
-            res.res ? res.json({ success: true }) : res.json({ success: true });
+            res.json({ success: true });
         } else {
             res.status(404).json({ error: "Admin introuvable." });
         }
